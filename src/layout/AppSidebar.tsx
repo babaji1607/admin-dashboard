@@ -54,7 +54,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <ListIcon />,
-    name: "Notifications History",
+    name: "Notifications History", // here you can revoke the notificaitons
     path: "/",
   },
   {
