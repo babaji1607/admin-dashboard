@@ -3,10 +3,10 @@ import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
 import { useEffect, useState } from "react";
-import { getAllStudents } from "../../api/Students";
+import { getAllTeachers } from "../../api/Teachers";
 import { useNavigate } from "react-router";
 
-export default function StudentTables() {
+export default function TeacherTables() {
     const navigate = useNavigate();
     const [tableData, setTableData] = useState([]);
 
@@ -17,7 +17,7 @@ export default function StudentTables() {
             navigate("/signin");
             return;
         }
-        getAllStudents(0, 10, token, data => {
+        getAllTeachers(0, 10, token, data => {
             console.log('data', data);
             setTableData(data);
         }, () => {

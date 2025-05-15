@@ -1,39 +1,37 @@
 import { useState } from "react";
-import { useSignIn } from "@clerk/clerk-react";
+// import { useSignIn } from "@clerk/clerk-react";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
+import { adminLogin } from '../../api/Auth'
+import { useNavigate } from "react-router";
 
 export default function SignInForm() {
-  const { signIn, setActive, isLoaded } = useSignIn();
+  // const { signIn, setActive, isLoaded } = useSignIn();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!isLoaded) return;
+    const result = await adminLogin(email, password, (data) => {
+      console.log("Login successful", data);
+      localStorage.setItem("token", data.access_token);
+    });
 
-    try {
-      const result = await signIn.create({
-        identifier: email,
-        password,
-      });
-
-      if (result.status === "complete") {
-        await setActive({ session: result.createdSessionId });
-        window.location.href = "/"; // ✅ Manual redirect
-      } else {
-        console.log("Unexpected sign-in status:", result.status);
-      }
-    } catch (err: any) {
-      console.error("Sign-in error:", err);
-      setError(err.errors?.[0]?.message || "Sign-in failed");
+    if (result.success) {
+      // If needed, you can save result.data (e.g., token/user info) or redirect
+      console.log("Login successful", result.data);
+      // TODO: setActive or navigate, depending on your flow
+      navigate("/")
+    } else {
+      setError(result.message);
     }
   };
 

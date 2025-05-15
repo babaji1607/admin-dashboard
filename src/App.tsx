@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router";
-import { useUser, ClerkProvider, SignedOut } from "@clerk/clerk-react";
 import ScrollToTop from "./components/common/ScrollToTop";
 import AppLayout from "./layout/AppLayout";
 import SignIn from "./pages/AuthPages/SignIn";
@@ -14,26 +13,30 @@ import Buttons from "./pages/UiElements/Buttons";
 import LineChart from "./pages/Charts/LineChart";
 import BarChart from "./pages/Charts/BarChart";
 import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
+// import BasicTables from "./pages/Tables/BasicTables";
+import TeacherTable from "./pages/Tables/TeacherTable"
 import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
 import Home from "./pages/Dashboard/Home";
 import StudentTables from "./pages/Tables/StudentTables";
+import { ReactNode } from "react";
+import FeeReceipts from "./pages/Tables/FeeReceipts";
+import NotificationHistory from "./pages/Tables/NotificationHistory";
 
 // ✅ Simple ProtectedRoute component
-function ProtectedRoute({ children }) {
-  const { isLoaded, isSignedIn } = useUser();
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
 
-  if (!isLoaded) {
-    return <div>Loading...</div>; // or a spinner
-  }
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const token = localStorage.getItem("token");
 
-  if (!isSignedIn) {
-    return <Navigate to="/signin" />;
+  if (!token) {
+    return <Navigate to="/signin" replace />;
   }
 
   return children;
-}
+};
 
 export default function App() {
   return (
@@ -55,8 +58,10 @@ export default function App() {
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/blank" element={<Blank />} />
                   <Route path="/form-elements" element={<FormElements />} />
-                  <Route path="/teacher-tables" element={<BasicTables />} />
+                  <Route path="/teacher-tables" element={<TeacherTable />} />
                   <Route path="/student-tables" element={<StudentTables />} />
+                  <Route path="/fee-receipts" element={<FeeReceipts />} />
+                  <Route path="/notification-history" element={<NotificationHistory />} />
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/avatars" element={<Avatars />} />
                   <Route path="/badge" element={<Badges />} />

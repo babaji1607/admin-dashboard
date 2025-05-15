@@ -1,12 +1,12 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
-import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
 import { useEffect, useState } from "react";
-import { getAllStudents } from "../../api/Students";
+import { getAllReceipts } from "../../api/FeeReceipts";
 import { useNavigate } from "react-router";
+import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
 
-export default function StudentTables() {
+export default function FeeReceipts() {
     const navigate = useNavigate();
     const [tableData, setTableData] = useState([]);
 
@@ -17,7 +17,7 @@ export default function StudentTables() {
             navigate("/signin");
             return;
         }
-        getAllStudents(0, 10, token, data => {
+        getAllReceipts(1, 10, token, data => { // it follows page pattern
             console.log('data', data);
             setTableData(data);
         }, () => {
@@ -35,7 +35,7 @@ export default function StudentTables() {
             <PageBreadcrumb pageTitle="Students" />
             <div className="space-y-6">
                 <ComponentCard title="Students data">
-                    <BasicTableOne
+                    <BasicTableTwo
                         rowData={tableData}
                         columns={[
                             {
@@ -43,12 +43,12 @@ export default function StudentTables() {
                                 header: "ID"
                             },
                             {
-                                key: "name",
-                                header: "Name"
+                                key: "student_id",
+                                header: "Student ID"
                             },
                             {
-                                key: "contact",
-                                header: "Contact"
+                                key: "paid_on",
+                                header: "Pay Date"
                             }
                         ]}
                     />

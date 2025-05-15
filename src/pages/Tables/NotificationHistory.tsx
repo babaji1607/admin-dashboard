@@ -1,12 +1,12 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
-import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
 import { useEffect, useState } from "react";
-import { getAllStudents } from "../../api/Students";
+import { getNotificationHistory } from "../../api/Notifications";
 import { useNavigate } from "react-router";
+import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
 
-export default function StudentTables() {
+export default function NotificationHistory() {
     const navigate = useNavigate();
     const [tableData, setTableData] = useState([]);
 
@@ -17,7 +17,7 @@ export default function StudentTables() {
             navigate("/signin");
             return;
         }
-        getAllStudents(0, 10, token, data => {
+        getNotificationHistory(token, data => { // it follows page pattern
             console.log('data', data);
             setTableData(data);
         }, () => {
@@ -35,20 +35,20 @@ export default function StudentTables() {
             <PageBreadcrumb pageTitle="Students" />
             <div className="space-y-6">
                 <ComponentCard title="Students data">
-                    <BasicTableOne
+                    <BasicTableTwo
                         rowData={tableData}
                         columns={[
                             {
-                                key: "id",
-                                header: "ID"
+                                key: "title",
+                                header: "Title"
                             },
                             {
-                                key: "name",
-                                header: "Name"
+                                key: "created_at",
+                                header: "Creation Date"
                             },
                             {
-                                key: "contact",
-                                header: "Contact"
+                                key: "recipient_type",
+                                header: "Type"
                             }
                         ]}
                     />

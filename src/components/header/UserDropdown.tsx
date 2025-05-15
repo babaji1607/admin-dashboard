@@ -1,25 +1,45 @@
-import { useState } from "react";
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useState, useEffect } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { getUserInfo } from "../../api/Auth";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const { signOut } = useClerk();
-  const { user } = useUser();
+  const [userName, setUserName] = useState("Anonymous");
+  const [userEmail, setUserEmail] = useState("no-email@example.com");
+  const [userImage, setUserImage] = useState("https://avatar.iran.liara.run/public/50");
+  const [data, setData] = useState<unknown>(null)
+  const navigate = useNavigate();
 
-  const userImage = user?.imageUrl || "/images/user/owner.jpg";
-  const userName = user?.fullName || "Anonymous";
-  const userEmail = user?.primaryEmailAddress?.emailAddress || "no-email@example.com";
+  useEffect(() => {
+    let token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/signin");
+      return;
+    }
+    getUserInfo(token, data => {
+      if (data.detail && data.detail === "Invalid token") {
+        localStorage.removeItem("token");
+        navigate("/signin");
+        return;
+      }
+      console.log('data', data);
+      setData(data)
+    })
 
-  function toggleDropdown() {
-    setIsOpen(!isOpen);
-  }
+  }, []);
 
-  function closeDropdown() {
-    setIsOpen(false);
-  }
+  const signOut = () => {
+    localStorage.removeItem("token");
+    // localStorage.removeItem("userName");
+    // localStorage.removeItem("userEmail");
+    // localStorage.removeItem("userImage");
+    navigate("/signin");
+  };
+
+  const toggleDropdown = () => setIsOpen(!isOpen);
+  const closeDropdown = () => setIsOpen(false);
 
   return (
     <div className="relative">
@@ -28,14 +48,13 @@ export default function UserDropdown() {
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
-          <img src={userImage} alt="User" />
+          <img className="w-full h-full object-cover" src={userImage} alt="User" />
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">{userName}</span>
 
         <svg
-          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
-            }`}
+          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           width="18"
           height="20"
           viewBox="0 0 18 20"
@@ -58,16 +77,16 @@ export default function UserDropdown() {
         className="absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
         <div>
-          <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
+          {/* <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
             {userName}
-          </span>
+          </span> */}
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            {userEmail}
+            {data?.email || userEmail}
           </span>
         </div>
 
-        <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
-          {/* <li>
+        {/* <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
+          <li>
             <DropdownItem
               onItemClick={closeDropdown}
               tag={Link}
@@ -80,7 +99,6 @@ export default function UserDropdown() {
                 height="24"
                 viewBox="0 0 24 24"
                 fill="none"
-                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
                   fillRule="evenodd"
@@ -90,8 +108,8 @@ export default function UserDropdown() {
               </svg>
               Edit profile
             </DropdownItem>
-          </li> */}
-        </ul>
+          </li>
+        </ul> */}
 
         <ul className="flex flex-col pt-3">
           <li>
@@ -109,7 +127,6 @@ export default function UserDropdown() {
                 height="24"
                 viewBox="0 0 24 24"
                 fill="none"
-                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
                   d="M16 17L21 12L16 7"

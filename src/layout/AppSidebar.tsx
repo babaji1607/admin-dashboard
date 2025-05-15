@@ -50,12 +50,12 @@ const navItems: NavItem[] = [
   {
     icon: <ListIcon />,
     name: "Fee Receipts",
-    path: "/",
+    path: "/fee-receipts",
   },
   {
     icon: <ListIcon />,
     name: "Notifications History", // here you can revoke the notificaitons
-    path: "/",
+    path: "/notification-history",
   },
   {
     icon: <CalenderIcon />,
