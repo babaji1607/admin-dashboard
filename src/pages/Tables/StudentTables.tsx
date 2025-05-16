@@ -17,14 +17,24 @@ export default function StudentTables() {
             navigate("/signin");
             return;
         }
-        getAllStudents(0, 10, token, data => {
-            console.log('data', data);
-            setTableData(data);
-        }, () => {
-            console.log('error');
-        })
+
+        getAllStudents(
+            0,
+            10,
+            token,
+            (data) => {
+                console.log("data", data);
+                setTableData(data);
+            },
+            () => {
+                console.log("error");
+            }
+        );
     }, []);
 
+    const handleRowClick = (row: any) => {
+        navigate("/student_form", { state: row });
+    };
 
     return (
         <>
@@ -33,24 +43,29 @@ export default function StudentTables() {
                 description="This is React.js Basic Tables Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
             />
             <PageBreadcrumb pageTitle="Students" />
+
             <div className="space-y-6">
+                {/* Header and Create Button */}
+                <div className="flex justify-between items-center mb-4">
+                    <button
+                        onClick={() => navigate("/student_form")}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                    >
+                        <span className="text-lg">+</span>
+                        <span>Create Student</span>
+                    </button>
+                </div>
+
+                {/* Students Table */}
                 <ComponentCard title="Students data">
                     <BasicTableOne
                         rowData={tableData}
                         columns={[
-                            {
-                                key: "id",
-                                header: "ID"
-                            },
-                            {
-                                key: "name",
-                                header: "Name"
-                            },
-                            {
-                                key: "contact",
-                                header: "Contact"
-                            }
+                            { key: "id", header: "ID" },
+                            { key: "name", header: "Name" },
+                            { key: "contact", header: "Contact" },
                         ]}
+                        onRowClick={handleRowClick}
                     />
                 </ComponentCard>
             </div>

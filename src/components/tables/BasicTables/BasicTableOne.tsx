@@ -19,12 +19,14 @@ interface DynamicTableProps {
   columns: Column[];  // Columns are required, not optional
   rowData: any[];     // Array of objects with keys matching column keys
   pageSize?: number;
+  onRowClick?: (row: any) => void; // Made onRowClick optional with proper typing
 }
 
 export default function DynamicTableWithNotification({
   columns,
   pageSize = 5,
   rowData,
+  onRowClick = () => { }
 }: DynamicTableProps) {
   // Keep only essential state
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -55,7 +57,11 @@ export default function DynamicTableWithNotification({
     header: "Notify",
     render: (row) => (
       <button
-        onClick={() => openNotificationForm(row.name || row.title || row.id || "User")}
+        onClick={(e) => {
+          // Stop event propagation to prevent triggering onRowClick
+          e.stopPropagation();
+          openNotificationForm(row.name || row.title || row.id || "User");
+        }}
         className="p-2 text-blue-600 rounded-full hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 transition-colors duration-200"
         title="Send Notification"
       >
@@ -299,7 +305,11 @@ export default function DynamicTableWithNotification({
                 </TableRow>
               ) : (
                 displayData.map((row, index) => (
-                  <TableRow key={row.id || index}>
+                  <TableRow
+                    key={row.id || index}
+                    onClick={() => onRowClick({ ...row, isUpdate: true })}
+                    className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-150"
+                  >
                     {tableColumns.map((column, columnIndex) => (
                       <TableCell
                         key={columnIndex}

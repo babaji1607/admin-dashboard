@@ -17,40 +17,56 @@ export default function TeacherTables() {
             navigate("/signin");
             return;
         }
-        getAllTeachers(0, 10, token, data => {
-            console.log('data', data);
-            setTableData(data);
-        }, () => {
-            console.log('error');
-        })
+
+        getAllTeachers(
+            0,
+            10,
+            token,
+            (data) => {
+                console.log("data", data);
+                setTableData(data);
+            },
+            () => {
+                console.log("error");
+            }
+        );
     }, []);
 
+    const handleRowClick = (row: any) => {
+        navigate("/teacher_form", { state: row });
+    };
 
     return (
         <>
             <PageMeta
-                title="React.js Basic Tables Dashboard | TailAdmin - Next.js Admin Dashboard Template"
-                description="This is React.js Basic Tables Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+                title="Teachers Dashboard | TailAdmin - Next.js Admin Dashboard Template"
+                description="This is Teachers Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
             />
-            <PageBreadcrumb pageTitle="Students" />
+            <PageBreadcrumb pageTitle="Teachers" />
+
             <div className="space-y-6">
-                <ComponentCard title="Students data">
+                {/* Header and Create Button */}
+                <div className="flex justify-between items-center mb-4">
+                    <button
+                        onClick={() => navigate("/teacher_form")}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                    >
+                        <span className="text-lg">+</span>
+                        <span>Create Teacher</span>
+                    </button>
+                </div>
+
+                {/* Teachers Table */}
+                <ComponentCard title="Teachers data">
                     <BasicTableOne
                         rowData={tableData}
                         columns={[
-                            {
-                                key: "id",
-                                header: "ID"
-                            },
-                            {
-                                key: "name",
-                                header: "Name"
-                            },
-                            {
-                                key: "contact",
-                                header: "Contact"
-                            }
+                            { key: "id", header: "ID" },
+                            { key: "name", header: "Name" },
+                            { key: "subject", header: "Subject" },
+                            { key: "contact", header: "Contact" },
                         ]}
+                        onRowClick={handleRowClick}
                     />
                 </ComponentCard>
             </div>

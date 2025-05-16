@@ -53,6 +53,11 @@ const navItems: NavItem[] = [
     path: "/fee-receipts",
   },
   {
+    icon: <TableIcon />,
+    name: "Attendance",
+    path: "/attendance",
+  },
+  {
     icon: <ListIcon />,
     name: "Notifications History", // here you can revoke the notificaitons
     path: "/notification-history",
