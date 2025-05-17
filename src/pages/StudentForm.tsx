@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { v4 as uuidv4 } from 'uuid'; // Import UUID
 import Alert from "../components/ui/alert/Alert";
-import { createStudent, updateStudent, deleteStudent } from "../api/Students";
-import { v4 as uuidv4 } from 'uuid'
+import { createStudent, updateStudent } from "../api/Students";
+import SelectDropdown from "../components/SelectDropdown";
+
+// Define option type for class dropdown
+interface OptionType {
+  label: string;
+  value: string | number;
+}
 
 const StudentForm = () => {
   const navigate = useNavigate();
@@ -10,16 +17,34 @@ const StudentForm = () => {
   const data = location.state || {};
   const isUpdate = data.isUpdate || false;
 
-  const [isEditing, setIsEditing] = useState(!isUpdate); // Editable only in Create mode initially
+  const [isEditing, setIsEditing] = useState(!isUpdate);
+
+  // Sample class options - in a real app, you'd fetch these from an API
+  // const [classOptions, setClassOptions] = useState<OptionType[]>([
+  //   { label: "Class A", value: "class-a-id" },
+  //   { label: "Class B", value: "class-b-id" },
+  //   { label: "Class C", value: "class-c-id" },
+  // ]);
+
   const [form, setForm] = useState({
     name: data.name || "",
     age: data.age || "",
-    class_name: data.class_name || "",
     contact: data.contact || "",
     address: data.address || "",
-    parent_id: data.parent_id || uuidv4(),
-    class_teacher_id: data.class_teacher_id || uuidv4(),
+    parent_id: data.parent_id || (!isUpdate ? uuidv4() : ""), // Generate UUID for new students
+    class_id: data.class_id || "",
   });
+
+  // Selected option for class dropdown
+  const [selectedClass, setSelectedClass] = useState<OptionType | null>(null);
+
+  // Set initial selected class when component mounts
+  // useEffect(() => {
+  //   if (data.class_id) {
+  //     const matchingClass = classOptions.find(option => option.value === data.class_id);
+  //     if (matchingClass) setSelectedClass(matchingClass);
+  //   }
+  // }, [data.class_id]);
 
   const [alert, setAlert] = useState<{
     type: "success" | "error";
@@ -32,8 +57,23 @@ const StudentForm = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Generate a new UUID for parent_id
+  const generateNewParentId = () => {
+    const newParentId = uuidv4();
+    setForm(prev => ({ ...prev, parent_id: newParentId }));
+  };
+
+  // Handle class dropdown selection changes
+  const handleClassChange = (option: OptionType | null) => {
+    setSelectedClass(option);
+    setForm(prev => ({
+      ...prev,
+      class_id: option ? option.value.toString() : ""
+    }));
+  };
+
   const validateForm = () => {
-    return form.name && form.age && form.class_name && form.contact && form.address;
+    return form.name && form.age && form.contact && form.address && form.class_id;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -48,17 +88,11 @@ const StudentForm = () => {
       return;
     }
 
-    const token = localStorage.getItem("token"); // or from context/provider
+    const token = localStorage.getItem("token");
     if (!token) {
-      // setAlert({
-      //   type: "error",
-      //   message: "You must be logged in to perform this action.",
-      //   show: true,
-      // });
       navigate("/signin");
       return;
     }
-
 
     if (isUpdate) {
       updateStudent(token, data.id, form, () => {
@@ -67,9 +101,7 @@ const StudentForm = () => {
           message: "Student updated successfully.",
           show: true,
         });
-        setTimeout(() => {
-          navigate(-1);
-        }, 2000);
+        setTimeout(() => navigate(-1), 2000);
       }, () => {
         setAlert({
           type: "error",
@@ -84,9 +116,7 @@ const StudentForm = () => {
           message: "Student created successfully.",
           show: true,
         });
-        setTimeout(() => {
-          navigate(-1);
-        }, 2000);
+        setTimeout(() => navigate(-1), 2000);
       }, () => {
         setAlert({
           type: "error",
@@ -100,10 +130,67 @@ const StudentForm = () => {
   const renderField = (
     label: string,
     name: keyof typeof form,
-    type: "text" | "number" | "textarea" = "text",
+    type: "text" | "number" | "textarea" | "select" = "text",
     editable: boolean = false
   ) => {
     const value = form[name];
+
+    // Special handling for class_id with SelectDropdown component
+    if (name === "class_id") {
+      if (!isEditing || !editable) {
+        return (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+            <p className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-800 dark:text-white">
+              {selectedClass ? selectedClass.label : value || ""}
+            </p>
+          </div>
+        );
+      }
+
+      return (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+          <SelectDropdown
+            // options={classOptions}
+            value={selectedClass}
+            onChange={handleClassChange}
+            placeholder="Select class..."
+            isClearable={true}
+          />
+        </div>
+      );
+    }
+
+    // Special handling for parent_id field to show UUID and regenerate button
+    if (name === "parent_id") {
+      return (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+          <div className="flex">
+            <p className="flex-grow px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-l-md text-gray-800 dark:text-white border-r-0 border border-gray-300 dark:border-gray-600">
+              {value || ""}
+            </p>
+            {!isUpdate && (
+              <button
+                type="button"
+                onClick={generateNewParentId}
+                className="px-3 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-r-md hover:bg-gray-300 dark:hover:bg-gray-500"
+              >
+                Generate New
+              </button>
+            )}
+          </div>
+          {!isUpdate && (
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              A temporary UUID is generated for parent reference
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    // Standard field rendering for other fields
     if (!isEditing || !editable) {
       return (
         <div>
@@ -167,11 +254,10 @@ const StudentForm = () => {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {renderField("Name", "name", "text", true)}
           {renderField("Age", "age", "number", true)}
-          {renderField("Class Name", "class_name", "text", true)}
           {renderField("Contact", "contact", "text", true)}
           {renderField("Address", "address", "textarea", true)}
           {renderField("Parent ID", "parent_id", "text", false)}
-          {renderField("Class Teacher ID", "class_teacher_id", "text", false)}
+          {renderField("Class ID", "class_id", "select", true)}
 
           <div className="md:col-span-2 flex justify-between items-center mt-6">
             {isUpdate && (

@@ -39,6 +39,11 @@ const navItems: NavItem[] = [
   },
   {
     icon: <TableIcon />,
+    name: "Classes",
+    path: "/classroom-tables",
+  },
+  {
+    icon: <TableIcon />,
     name: "Students",
     path: "/student-tables",
   },

@@ -18,7 +18,6 @@ const TeacherForm = () => {
         age: data.age || "",
         contact: data.contact || "",
         subject: data.subject || "",
-        assignedClass: data.assignedClass || "",
         address: data.address || "",
     });
 
@@ -30,41 +29,39 @@ const TeacherForm = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const isEmptyField = Object.values(form).some((value) => value.trim() === "");
+        const requiredFields = ["name", "age", "contact", "subject", "address"];
+        const isEmptyField = requiredFields.some(field => {
+            const value = form[field as keyof typeof form];
+            return typeof value === "string" ? value.trim() === "" : !value;
+        });
+
         if (isEmptyField) {
             setShowError(true);
             setShowSuccess(false);
             return;
         }
 
-        const token = localStorage.getItem("token"); // adjust this line if you use context instead
+        const token = localStorage.getItem("token");
+
+        const onSuccess = () => {
+            setShowSuccess(true);
+            setShowError(false);
+            setTimeout(() => {
+                navigate(-1);
+            }, 2000);
+        };
+
+        const onError = () => {
+            setShowError(true);
+            setShowSuccess(false);
+        };
 
         if (isUpdate) {
-            updateTeacher(token, data.id, form, () => {
-                setShowSuccess(true);
-                setShowError(false);
-                setTimeout(() => {
-                    navigate(-1);
-                }, 2000);
-            }, () => {
-                setShowError(true);
-                setShowSuccess(false);
-            });
+            updateTeacher(token, data.id, form, onSuccess, onError);
         } else {
-            createTeacher(token, form, () => {
-                setShowSuccess(true);
-                setShowError(false);
-                setTimeout(() => {
-                    navigate(-1);
-                }, 2000);
-            }, () => {
-                setShowError(true);
-                setShowSuccess(false);
-            });
+            createTeacher(token, form, onSuccess, onError);
         }
     };
-
-
 
     const renderField = (
         label: string,
@@ -73,6 +70,7 @@ const TeacherForm = () => {
         editable: boolean = true
     ) => {
         const value = form[name];
+
         if (!isEditing || !editable) {
             return (
                 <div>
@@ -118,7 +116,6 @@ const TeacherForm = () => {
                     </button>
                 </div>
 
-                {/* Alerts */}
                 <div className="mb-4">
                     {showError && (
                         <Alert
@@ -143,7 +140,6 @@ const TeacherForm = () => {
                     {renderField("Age", "age", "number")}
                     {renderField("Contact", "contact", "text")}
                     {renderField("Subject", "subject", "text")}
-                    {renderField("Assigned Class", "assignedClass", "text")}
                     {renderField("Address", "address", "textarea")}
 
                     <div className="md:col-span-2 flex justify-between items-center mt-6">

@@ -25,6 +25,8 @@ import NotificationHistory from "./pages/Tables/NotificationHistory";
 import AttendanceTable from "./pages/Tables/AttendanceTable";
 import StudentForm from "./pages/StudentForm";
 import TeacherForm from "./pages/TeacherForm";
+import ClassroomTable from "./pages/Tables/ClassroomTable";
+import ClassroomForm from "./pages/ClassroomForm";
 
 // ✅ Simple ProtectedRoute component
 interface ProtectedRouteProps {
@@ -62,12 +64,14 @@ export default function App() {
                   <Route path="/blank" element={<Blank />} />
                   <Route path="/form-elements" element={<FormElements />} />
                   <Route path="/teacher-tables" element={<TeacherTable />} />
+                  <Route path="/classroom-tables" element={<ClassroomTable />} />
                   <Route path="/student-tables" element={<StudentTables />} />
                   <Route path="/fee-receipts" element={<FeeReceipts />} />
                   <Route path="/notification-history" element={<NotificationHistory />} />
                   <Route path="/attendance" element={<AttendanceTable />} />
                   <Route path="/student_form" element={<StudentForm />} />
                   <Route path="/teacher_form" element={<TeacherForm />} />
+                  <Route path="/classroom_form" element={<ClassroomForm />} />
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/avatars" element={<Avatars />} />
                   <Route path="/badge" element={<Badges />} />
