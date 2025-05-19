@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import Alert from "../components/ui/alert/Alert";
 import { createTeacher, updateTeacher } from "../api/Teachers";
+import { registerUser } from "../api/Auth";
 
 const TeacherForm = () => {
     const navigate = useNavigate();
@@ -10,9 +11,7 @@ const TeacherForm = () => {
     const isUpdate = data.isUpdate || false;
 
     const [isEditing, setIsEditing] = useState(!isUpdate);
-    const [showSuccess, setShowSuccess] = useState(false);
-    const [showError, setShowError] = useState(false);
-
+    
     const [form, setForm] = useState({
         name: data.name || "",
         age: data.age || "",
@@ -21,45 +20,105 @@ const TeacherForm = () => {
         address: data.address || "",
     });
 
+    const [authFields, setAuthFields] = useState({
+        email: "",
+        password: "",
+        role: "teacher",
+    });
+
+    const [alert, setAlert] = useState({
+        type: "success" as "success" | "error",
+        message: "",
+        show: false,
+    });
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setForm((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleAuthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setAuthFields((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const validateForm = () => {
+        // Basic form validation
+        return form.name && form.age && form.contact && form.subject && form.address;
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const requiredFields = ["name", "age", "contact", "subject", "address"];
-        const isEmptyField = requiredFields.some(field => {
-            const value = form[field as keyof typeof form];
-            return typeof value === "string" ? value.trim() === "" : !value;
-        });
+        // If in viewing mode (update but not editing), do nothing on submit
+        if (isUpdate && !isEditing) {
+            return;
+        }
 
-        if (isEmptyField) {
-            setShowError(true);
-            setShowSuccess(false);
+        if (!validateForm()) {
+            setAlert({
+                type: "error",
+                message: "Please fill out all required fields before submitting.",
+                show: true,
+            });
             return;
         }
 
         const token = localStorage.getItem("token");
-
-        const onSuccess = () => {
-            setShowSuccess(true);
-            setShowError(false);
-            setTimeout(() => {
-                navigate(-1);
-            }, 2000);
-        };
-
-        const onError = () => {
-            setShowError(true);
-            setShowSuccess(false);
-        };
+        if (!token) {
+            navigate("/signin");
+            return;
+        }
 
         if (isUpdate) {
-            updateTeacher(token, data.id, form, onSuccess, onError);
+            updateTeacher(token, data.id, form, () => {
+                setAlert({
+                    type: "success",
+                    message: "Teacher updated successfully.",
+                    show: true,
+                });
+                setIsEditing(false);
+                setTimeout(() => {
+                    setAlert(prev => ({ ...prev, show: false }));
+                }, 2000);
+            }, (error) => {
+                setAlert({
+                    type: "error",
+                    message: `Failed to update teacher: ${error?.message || "Unknown error"}`,
+                    show: true,
+                });
+            });
         } else {
-            createTeacher(token, form, onSuccess, onError);
+            registerUser(
+                authFields.email,
+                authFields.password,
+                authFields.role,
+                (userData) => {
+                    console.log("User registered successfully", userData);
+                    createTeacher(token, { ...form, user_id: userData.id }, () => {
+                        setAlert({
+                            type: "success",
+                            message: "Teacher created successfully.",
+                            show: true,
+                        });
+                        setTimeout(() => navigate(-1), 2000);
+                    }, (error) => {
+                        setAlert({
+                            type: "error",
+                            message: `Failed to create teacher: ${error?.message || "Unknown error"}`,
+                            show: true,
+                        });
+                    });
+                },
+                (error) => {
+                    console.error("Error registering user:", error);
+                    setAlert({
+                        type: "error",
+                        message: `Failed to register user: ${error?.message || "Unknown error"}`,
+                        show: true,
+                    });
+                }
+            );
         }
     };
 
@@ -101,6 +160,37 @@ const TeacherForm = () => {
         );
     };
 
+    // Render auth fields only when creating a new teacher
+    const renderAuthFields = () => {
+        if (isUpdate) return null;
+
+        return (
+            <>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input
+                        type="text"
+                        name="email"
+                        value={authFields.email}
+                        onChange={handleAuthChange}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                    <input
+                        type="password"
+                        name="password"
+                        value={authFields.password}
+                        onChange={handleAuthChange}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                </div>
+            </>
+        );
+    };
+
     return (
         <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900">
             <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
@@ -108,32 +198,36 @@ const TeacherForm = () => {
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
                         {isUpdate ? "Teacher Details" : "Create Teacher"}
                     </h2>
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="text-sm text-gray-600 dark:text-gray-300 hover:underline"
-                    >
-                        ← Go Back
-                    </button>
+                    <div className="flex items-center space-x-4">
+                        {isUpdate && (
+                            <button
+                                onClick={() => setIsEditing(!isEditing)}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+                            >
+                                {isEditing ? "Cancel" : "Edit"}
+                            </button>
+                        )}
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="text-sm text-gray-600 dark:text-gray-300 hover:underline"
+                        >
+                            ← Go Back
+                        </button>
+                    </div>
                 </div>
 
-                <div className="mb-4">
-                    {showError && (
+                {alert.show && (
+                    <div className="mb-6">
                         <Alert
-                            variant="error"
-                            title="Error Message"
-                            message="Please fill in all the required fields."
-                            showLink={false}
+                            variant={alert.type}
+                            title={alert.type === "error" ? "Error Message" : "Success Message"}
+                            message={alert.message}
+                            showLink={alert.type === "error"}
+                            linkHref="/"
+                            linkText="Learn more"
                         />
-                    )}
-                    {showSuccess && (
-                        <Alert
-                            variant="success"
-                            title="Success Message"
-                            message="Form submitted successfully."
-                            showLink={false}
-                        />
-                    )}
-                </div>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {renderField("Name", "name", "text")}
@@ -142,34 +236,16 @@ const TeacherForm = () => {
                     {renderField("Subject", "subject", "text")}
                     {renderField("Address", "address", "textarea")}
 
-                    <div className="md:col-span-2 flex justify-between items-center mt-6">
-                        {isUpdate && (
-                            <button
-                                type="button"
-                                onClick={() => setIsEditing((prev) => !prev)}
-                                className="px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded-md hover:bg-yellow-600"
-                            >
-                                {isEditing ? "Cancel Edit" : "Edit"}
-                            </button>
-                        )}
+                    {/* Auth fields only shown when creating a new teacher */}
+                    {renderAuthFields()}
 
-                        {(isEditing || !isUpdate) && (
-                            <div className="flex space-x-3">
-                                <button
-                                    type="button"
-                                    onClick={() => navigate(-1)}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
-                                >
-                                    Submit
-                                </button>
-                            </div>
-                        )}
+                    <div className="md:col-span-2">
+                        <button
+                            type="submit"
+                            className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                        >
+                            {isUpdate ? (isEditing ? "Update Teacher" : "View Teacher") : "Create Teacher"}
+                        </button>
                     </div>
                 </form>
             </div>

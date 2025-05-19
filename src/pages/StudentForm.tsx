@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { v4 as uuidv4 } from 'uuid'; // Import UUID
+import { v4 as uuidv4 } from 'uuid';
 import Alert from "../components/ui/alert/Alert";
 import { createStudent, updateStudent } from "../api/Students";
 import SelectDropdown from "../components/SelectDropdown";
+import { registerUser } from "../api/Auth";
 
-// Define option type for class dropdown
+// Define option type
 interface OptionType {
   label: string;
   value: string | number;
@@ -19,51 +20,46 @@ const StudentForm = () => {
 
   const [isEditing, setIsEditing] = useState(!isUpdate);
 
-  // Sample class options - in a real app, you'd fetch these from an API
-  // const [classOptions, setClassOptions] = useState<OptionType[]>([
-  //   { label: "Class A", value: "class-a-id" },
-  //   { label: "Class B", value: "class-b-id" },
-  //   { label: "Class C", value: "class-c-id" },
-  // ]);
-
   const [form, setForm] = useState({
     name: data.name || "",
     age: data.age || "",
     contact: data.contact || "",
     address: data.address || "",
-    parent_id: data.parent_id || (!isUpdate ? uuidv4() : ""), // Generate UUID for new students
+    parent_id: data.parent_id || (!isUpdate ? uuidv4() : ""),
     class_id: data.class_id || "",
   });
 
-  // Selected option for class dropdown
-  const [selectedClass, setSelectedClass] = useState<OptionType | null>(null);
+  const [authFields, setAuthFields] = useState({
+    email: "",
+    password: "",
+    role: "student",
+  });
 
-  // Set initial selected class when component mounts
-  // useEffect(() => {
-  //   if (data.class_id) {
-  //     const matchingClass = classOptions.find(option => option.value === data.class_id);
-  //     if (matchingClass) setSelectedClass(matchingClass);
-  //   }
-  // }, [data.class_id]);
+  const [selectedClass, setSelectedClass] = useState<OptionType | null>(
+    data.class_id ? { label: data.class_name || data.class_id, value: data.class_id } : null
+  );
 
-  const [alert, setAlert] = useState<{
-    type: "success" | "error";
-    message: string;
-    show: boolean;
-  }>({ type: "success", message: "", show: false });
+  const [alert, setAlert] = useState({
+    type: "success" as "success" | "error",
+    message: "",
+    show: false,
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Generate a new UUID for parent_id
+  const handleAuthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setAuthFields((prev) => ({ ...prev, [name]: value }));
+  };
+
   const generateNewParentId = () => {
     const newParentId = uuidv4();
     setForm(prev => ({ ...prev, parent_id: newParentId }));
   };
 
-  // Handle class dropdown selection changes
   const handleClassChange = (option: OptionType | null) => {
     setSelectedClass(option);
     setForm(prev => ({
@@ -73,11 +69,17 @@ const StudentForm = () => {
   };
 
   const validateForm = () => {
+    // Basic form validation only - email validation removed
     return form.name && form.age && form.contact && form.address && form.class_id;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // If in viewing mode (update but not editing), do nothing on submit
+    if (isUpdate && !isEditing) {
+      return;
+    }
 
     if (!validateForm()) {
       setAlert({
@@ -101,29 +103,44 @@ const StudentForm = () => {
           message: "Student updated successfully.",
           show: true,
         });
-        setTimeout(() => navigate(-1), 2000);
-      }, () => {
+        setIsEditing(false);
+        setTimeout(() => {
+          setAlert(prev => ({ ...prev, show: false }));
+        }, 2000);
+      }, (error) => {
         setAlert({
           type: "error",
-          message: "Failed to update student.",
+          message: `Failed to update student: ${error?.message || "Unknown error"}`,
           show: true,
         });
       });
     } else {
-      createStudent(token, form, () => {
-        setAlert({
-          type: "success",
-          message: "Student created successfully.",
-          show: true,
-        });
-        setTimeout(() => navigate(-1), 2000);
-      }, () => {
-        setAlert({
-          type: "error",
-          message: "Failed to create student.",
-          show: true,
-        });
-      });
+      registerUser(
+        authFields.email,
+        authFields.password,
+        authFields.role,
+        (userData) => {
+          console.log("User registered successfully", userData);
+          createStudent(token, { ...form, user_id: userData.id }, () => {
+            // Register user when creating a new student, but don't block success on this
+            setAlert({
+              type: "success",
+              message: "Student created successfully.",
+              show: true,
+            });
+            setTimeout(() => navigate(-1), 2000);
+          }, (error) => {
+            setAlert({
+              type: "error",
+              message: `Failed to create student: ${error?.message || "Unknown error"}`,
+              show: true,
+            });
+          });
+        },
+        (error) => {
+          console.error("Error registering user:", error);
+        }
+      );
     }
   };
 
@@ -135,7 +152,6 @@ const StudentForm = () => {
   ) => {
     const value = form[name];
 
-    // Special handling for class_id with SelectDropdown component
     if (name === "class_id") {
       if (!isEditing || !editable) {
         return (
@@ -152,7 +168,6 @@ const StudentForm = () => {
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
           <SelectDropdown
-            // options={classOptions}
             value={selectedClass}
             onChange={handleClassChange}
             placeholder="Select class..."
@@ -162,7 +177,6 @@ const StudentForm = () => {
       );
     }
 
-    // Special handling for parent_id field to show UUID and regenerate button
     if (name === "parent_id") {
       return (
         <div>
@@ -190,7 +204,6 @@ const StudentForm = () => {
       );
     }
 
-    // Standard field rendering for other fields
     if (!isEditing || !editable) {
       return (
         <div>
@@ -223,6 +236,37 @@ const StudentForm = () => {
     );
   };
 
+  // Render auth fields only when creating a new student
+  const renderAuthFields = () => {
+    if (isUpdate) return null;
+
+    return (
+      <>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+          <input
+            type="text"
+            name="email"
+            value={authFields.email}
+            onChange={handleAuthChange}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+          <input
+            type="password"
+            name="password"
+            value={authFields.password}
+            onChange={handleAuthChange}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+      </>
+    );
+  };
+
   return (
     <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
@@ -230,12 +274,22 @@ const StudentForm = () => {
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
             {isUpdate ? "Student Details" : "Create Student"}
           </h2>
-          <button
-            onClick={() => navigate(-1)}
-            className="text-sm text-gray-600 dark:text-gray-300 hover:underline"
-          >
-            ← Go Back
-          </button>
+          <div className="flex items-center space-x-4">
+            {isUpdate && (
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+              >
+                {isEditing ? "Cancel" : "Edit"}
+              </button>
+            )}
+            <button
+              onClick={() => navigate(-1)}
+              className="text-sm text-gray-600 dark:text-gray-300 hover:underline"
+            >
+              ← Go Back
+            </button>
+          </div>
         </div>
 
         {alert.show && (
@@ -259,34 +313,16 @@ const StudentForm = () => {
           {renderField("Parent ID", "parent_id", "text", false)}
           {renderField("Class ID", "class_id", "select", true)}
 
-          <div className="md:col-span-2 flex justify-between items-center mt-6">
-            {isUpdate && (
-              <button
-                type="button"
-                onClick={() => setIsEditing((prev) => !prev)}
-                className="px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded-md hover:bg-yellow-600"
-              >
-                {isEditing ? "Cancel Edit" : "Edit"}
-              </button>
-            )}
+          {/* Auth fields only shown when creating a new student */}
+          {renderAuthFields()}
 
-            {(isEditing || !isUpdate) && (
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={() => navigate(-1)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
-                >
-                  Submit
-                </button>
-              </div>
-            )}
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            >
+              {isUpdate ? (isEditing ? "Update Student" : "View Student") : "Create Student"}
+            </button>
           </div>
         </form>
       </div>

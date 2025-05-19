@@ -8,11 +8,20 @@ interface Teacher {
   address: string;
 }
 
+interface Student {
+  id: string;
+  name: string;
+  age: number;
+  contact: string;
+  address: string;
+}
+
 interface ClassroomData {
   name: string;
   teacher_id: string;
   id: string;
   teacher: Teacher | null;
+  students: Student[];
 }
 
 const ClassroomForm = () => {
@@ -20,18 +29,16 @@ const ClassroomForm = () => {
   const location = useLocation();
   const data = (location.state || {}) as ClassroomData;
 
-  const renderField = (label: string, value: string | number | undefined | null) => {
-    return (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          {label}
-        </label>
-        <p className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-800 dark:text-white">
-          {value !== undefined && value !== null ? value : "N/A"}
-        </p>
-      </div>
-    );
-  };
+  const renderField = (label: string, value: string | number | undefined | null) => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        {label}
+      </label>
+      <p className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-800 dark:text-white">
+        {value !== undefined && value !== null ? value : "N/A"}
+      </p>
+    </div>
+  );
 
   return (
     <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900">
@@ -48,6 +55,7 @@ const ClassroomForm = () => {
           </button>
         </div>
 
+        {/* Classroom Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="md:col-span-2">
             <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
@@ -58,7 +66,8 @@ const ClassroomForm = () => {
           {renderField("Classroom ID", data.id)}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Teacher Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="md:col-span-2">
             <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
               Teacher Information
@@ -69,7 +78,6 @@ const ClassroomForm = () => {
               </p>
             )}
           </div>
-          
           {data.teacher && (
             <>
               {renderField("Teacher Name", data.teacher.name)}
@@ -82,6 +90,31 @@ const ClassroomForm = () => {
           )}
         </div>
 
+        {/* Students Info */}
+        <div className="md:col-span-2">
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            Students ({data.students?.length || 0})
+          </h3>
+          {data.students && data.students.length > 0 ? (
+            <ul className="space-y-2">
+              {data.students.map((student) => (
+                <li
+                  key={student.id}
+                  className="px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-800 dark:text-white"
+                >
+                  <span className="font-medium">Name:</span> {student.name} <br />
+                  <span className="font-medium">ID:</span> {student.id}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400 italic">
+              No students enrolled in this classroom
+            </p>
+          )}
+        </div>
+
+        {/* Back Button */}
         <div className="flex justify-end mt-8">
           <button
             onClick={() => navigate(-1)}

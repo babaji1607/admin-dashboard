@@ -66,3 +66,41 @@ export const getUserInfo = async (token: string, onSucess = (data: any) => { }) 
         }
     }
 }
+
+
+export const registerUser = async (email, password, role, onSuccess, onError) => {
+    const url = `${GLOBAL_URL}/register`;
+
+    const payload = {
+        email,
+        password,
+        role
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return onError({
+                status: response.status,
+                message: data?.detail || 'Registration failed'
+            });
+        }
+
+        onSuccess(data);
+    } catch (error) {
+        onError({
+            status: 500,
+            message: error.message || 'An unexpected error occurred'
+        });
+    }
+};
