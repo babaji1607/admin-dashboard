@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { v4 as uuidv4 } from 'uuid';
 import Alert from "../components/ui/alert/Alert";
 import { createStudent, updateStudent } from "../api/Students";
 import SelectDropdown from "../components/SelectDropdown";
@@ -25,7 +24,10 @@ const StudentForm = () => {
     age: data.age || "",
     contact: data.contact || "",
     address: data.address || "",
-    parent_id: data.parent_id || (!isUpdate ? uuidv4() : ""),
+    FatherName: data.FatherName || "",
+    MotherName: data.MotherName || "",
+    FatherContact: data.FatherContact || "",
+    MotherContact: data.MotherContact || "",
     class_id: data.class_id || "",
   });
 
@@ -55,11 +57,6 @@ const StudentForm = () => {
     setAuthFields((prev) => ({ ...prev, [name]: value }));
   };
 
-  const generateNewParentId = () => {
-    const newParentId = uuidv4();
-    setForm(prev => ({ ...prev, parent_id: newParentId }));
-  };
-
   const handleClassChange = (option: OptionType | null) => {
     setSelectedClass(option);
     setForm(prev => ({
@@ -69,8 +66,8 @@ const StudentForm = () => {
   };
 
   const validateForm = () => {
-    // Basic form validation only - email validation removed
-    return form.name && form.age && form.contact && form.address && form.class_id;
+    // Basic validation requires at least name and class_id
+    return form.name && form.class_id;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -122,7 +119,6 @@ const StudentForm = () => {
         (userData) => {
           console.log("User registered successfully", userData);
           createStudent(token, { ...form, user_id: userData.id }, () => {
-            // Register user when creating a new student, but don't block success on this
             setAlert({
               type: "success",
               message: "Student created successfully.",
@@ -148,7 +144,8 @@ const StudentForm = () => {
     label: string,
     name: keyof typeof form,
     type: "text" | "number" | "textarea" | "select" = "text",
-    editable: boolean = false
+    editable: boolean = false,
+    required: boolean = false
   ) => {
     const value = form[name];
 
@@ -156,7 +153,9 @@ const StudentForm = () => {
       if (!isEditing || !editable) {
         return (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {label}{required && <span className="text-red-500">*</span>}
+            </label>
             <p className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-800 dark:text-white">
               {selectedClass ? selectedClass.label : value || ""}
             </p>
@@ -166,7 +165,9 @@ const StudentForm = () => {
 
       return (
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {label}{required && <span className="text-red-500">*</span>}
+          </label>
           <SelectDropdown
             value={selectedClass}
             onChange={handleClassChange}
@@ -177,37 +178,12 @@ const StudentForm = () => {
       );
     }
 
-    if (name === "parent_id") {
-      return (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-          <div className="flex">
-            <p className="flex-grow px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-l-md text-gray-800 dark:text-white border-r-0 border border-gray-300 dark:border-gray-600">
-              {value || ""}
-            </p>
-            {!isUpdate && (
-              <button
-                type="button"
-                onClick={generateNewParentId}
-                className="px-3 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-r-md hover:bg-gray-300 dark:hover:bg-gray-500"
-              >
-                Generate New
-              </button>
-            )}
-          </div>
-          {!isUpdate && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              A temporary UUID is generated for parent reference
-            </p>
-          )}
-        </div>
-      );
-    }
-
     if (!isEditing || !editable) {
       return (
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {label}{required && <span className="text-red-500">*</span>}
+          </label>
           <p className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-800 dark:text-white">
             {value || ""}
           </p>
@@ -221,12 +197,14 @@ const StudentForm = () => {
       onChange: handleChange,
       className:
         "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white",
-      required: true,
+      required: required,
     };
 
     return (
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {label}{required && <span className="text-red-500">*</span>}
+        </label>
         {type === "textarea" ? (
           <textarea {...commonProps} rows={3} />
         ) : (
@@ -242,25 +220,34 @@ const StudentForm = () => {
 
     return (
       <>
+        <div className="md:col-span-2 border-t border-gray-200 dark:border-gray-700 pt-6 mt-2">
+          <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Account Information</h3>
+        </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Email<span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             name="email"
             value={authFields.email}
             onChange={handleAuthChange}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Password<span className="text-red-500">*</span>
+          </label>
           <input
             type="password"
             name="password"
             value={authFields.password}
             onChange={handleAuthChange}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            required
           />
         </div>
       </>
@@ -306,20 +293,33 @@ const StudentForm = () => {
         )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {renderField("Name", "name", "text", true)}
+          {/* Student Information */}
+          <div className="md:col-span-2">
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Student Information</h3>
+          </div>
+          {renderField("Name", "name", "text", true, true)}
           {renderField("Age", "age", "number", true)}
           {renderField("Contact", "contact", "text", true)}
           {renderField("Address", "address", "textarea", true)}
-          {renderField("Parent ID", "parent_id", "text", false)}
-          {renderField("Class ID", "class_id", "select", true)}
+          {renderField("Class", "class_id", "select", true, true)}
+
+          {/* Parent Information */}
+          <div className="md:col-span-2 border-t border-gray-200 dark:border-gray-700 pt-6 mt-2">
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Parent Information</h3>
+          </div>
+          {renderField("Father's Name", "FatherName", "text", true)}
+          {renderField("Father's Contact", "FatherContact", "text", true)}
+          {renderField("Mother's Name", "MotherName", "text", true)}
+          {renderField("Mother's Contact", "MotherContact", "text", true)}
 
           {/* Auth fields only shown when creating a new student */}
           {renderAuthFields()}
 
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 mt-4">
             <button
               type="submit"
               className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              disabled={isUpdate && !isEditing}
             >
               {isUpdate ? (isEditing ? "Update Student" : "View Student") : "Create Student"}
             </button>

@@ -1,4 +1,4 @@
-import { GLOBAL_URL } from "../../utils"
+import { GLOBAL_URL } from "../../utils";
 
 export const getAttendanceSessions = async (
     page: number,
@@ -7,9 +7,9 @@ export const getAttendanceSessions = async (
     class_name?: string,
     date?: string,            // Expected in 'YYYY-MM-DD' format
     teacher_id?: string,
-    onSuccess = (data: any) => { },
-    onError = () => { }
-) => {
+    onSuccess: (data: any) => void = () => {},
+    onError: () => void = () => {}
+): Promise<{ data?: any; status?: number }> => {
     try {
         const queryParams = new URLSearchParams({
             page: page.toString(),
@@ -48,4 +48,3 @@ export const getAttendanceSessions = async (
         return {};
     }
 };
-

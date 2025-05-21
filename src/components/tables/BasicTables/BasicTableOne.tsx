@@ -7,7 +7,6 @@ import {
   TableRow,
 } from "../../ui/table";
 import NotificationForm from "./NotificationForm";
-import Badge from "../../ui/badge/Badge";
 
 interface Column {
   key: string;
@@ -49,7 +48,6 @@ export default function DynamicTableWithNotification({
   const totalPages = Math.max(1, Math.ceil(rowData.length / pageSize));
 
   // Empty default columns - will use provided columns instead
-  const defaultColumns: Column[] = [];
 
   // Add notification action column
   const notificationColumn: Column = {
@@ -297,7 +295,7 @@ export default function DynamicTableWithNotification({
               {rowData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={tableColumns.length}
+                    // colSpan={tableColumns.length}
                     className="px-5 py-4 text-center text-gray-500 dark:text-gray-400"
                   >
                     No data available

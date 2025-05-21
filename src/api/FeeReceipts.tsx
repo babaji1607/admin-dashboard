@@ -1,12 +1,17 @@
-import { GLOBAL_URL } from "../../utils"
+import { GLOBAL_URL } from "../../utils";
+
+interface ApiResponse {
+    data?: any;
+    status?: number;
+}
 
 export const getAllReceipts = async (
     page: number,
     limit: number,
     token: string,
-    onSucess = (data: any) => { },
-    onError = () => { }
-) => {
+    onSuccess: (data: any) => void = () => { },
+    onError: (data: any) => void = () => { }
+): Promise<ApiResponse> => {
     try {
         const url = `${GLOBAL_URL}/fee-receipts?page=${page}&limit=${limit}`;
 
@@ -21,9 +26,7 @@ export const getAllReceipts = async (
         const data = await response.json();
 
         if (response.status === 200) {
-            onSucess(data);
-        } else {
-            onError();
+            onSuccess(data);
         }
 
         return {
@@ -32,7 +35,7 @@ export const getAllReceipts = async (
         };
     } catch (e) {
         console.log(e);
-        onError();
+        onError(e);
         return {};
     }
-}
+};

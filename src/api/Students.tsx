@@ -1,12 +1,24 @@
 import { GLOBAL_URL } from "../../utils";
 
+interface ApiResponse {
+    data?: any;
+    status?: number;
+}
+
+interface ErrorResponse {
+    status: number | null;
+    message: string;
+    data?: any;
+    error?: any;
+}
+
 export const getAllStudents = async (
     offset: number,
     limit: number,
     token: string,
-    onSucess = (data: any) => { },
-    onError = () => { }
-) => {
+    onSuccess: (data: any) => void = () => {},
+    onError: () => void = () => {}
+): Promise<ApiResponse> => {
     try {
         const url = `${GLOBAL_URL}/students/showall?offset=${offset}&limit=${limit}`;
 
@@ -21,7 +33,7 @@ export const getAllStudents = async (
         const data = await response.json();
 
         if (response.status === 200) {
-            onSucess(data);
+            onSuccess(data);
         } else {
             onError();
         }
@@ -31,14 +43,18 @@ export const getAllStudents = async (
             status: response.status
         };
     } catch (e) {
-        console.log(e);
+        console.error("Error fetching students:", e);
         onError();
         return {};
     }
-}
+};
 
-
-export const createStudent = async (token, studentData, onSuccess, onError) => {
+export const createStudent = async (
+    token: string,
+    studentData: any,
+    onSuccess: (data: any) => void,
+    onError: (error: ErrorResponse) => void
+): Promise<void> => {
     try {
         const response = await fetch(`${GLOBAL_URL}/students/create`, {
             method: 'POST',
@@ -53,7 +69,7 @@ export const createStudent = async (token, studentData, onSuccess, onError) => {
         const data = await response.json();
 
         if (response.ok) {
-            onSuccess(data); // success callback
+            onSuccess(data);
         } else {
             onError({
                 status: response.status,
@@ -61,20 +77,23 @@ export const createStudent = async (token, studentData, onSuccess, onError) => {
                 data
             });
         }
-        return
     } catch (error) {
-        console.log("error", error);
+        console.error("Error creating student:", error);
         onError({
             status: null,
-            message: error.message || 'Network error',
+            message: error instanceof Error ? error.message : 'Network error',
             error
         });
-        return
     }
 };
 
-
-export const updateStudent = async (token, studentId, updatedData, onSuccess, onError) => {
+export const updateStudent = async (
+    token: string,
+    studentId: string,
+    updatedData: any,
+    onSuccess: (data: any) => void,
+    onError: (error: ErrorResponse) => void
+): Promise<void> => {
     try {
         const response = await fetch(`${GLOBAL_URL}/students/student/${studentId}/`, {
             method: 'PUT',
@@ -89,7 +108,7 @@ export const updateStudent = async (token, studentId, updatedData, onSuccess, on
         const data = await response.json();
 
         if (response.ok) {
-            onSuccess(data); // success callback
+            onSuccess(data);
         } else {
             onError({
                 status: response.status,
@@ -98,16 +117,21 @@ export const updateStudent = async (token, studentId, updatedData, onSuccess, on
             });
         }
     } catch (error) {
-        console.log("error", error);
+        console.error("Error updating student:", error);
         onError({
             status: null,
-            message: error.message || 'Network error',
+            message: error instanceof Error ? error.message : 'Network error',
             error
         });
     }
 };
 
-export const deleteStudent = async (token, studentId, onSuccess, onError) => {
+export const deleteStudent = async (
+    token: string,
+    studentId: string,
+    onSuccess: (response: { message: string; status: number }) => void,
+    onError: (error: ErrorResponse) => void
+): Promise<void> => {
     try {
         const response = await fetch(`${GLOBAL_URL}/students/student/${studentId}/`, {
             method: 'DELETE',
@@ -118,8 +142,10 @@ export const deleteStudent = async (token, studentId, onSuccess, onError) => {
         });
 
         if (response.ok) {
-            // DELETE usually returns no content (204), so we don't need to parse JSON
-            onSuccess({ message: 'Student deleted successfully', status: response.status });
+            onSuccess({ 
+                message: 'Student deleted successfully', 
+                status: response.status 
+            });
         } else {
             const data = await response.json();
             onError({
@@ -131,10 +157,8 @@ export const deleteStudent = async (token, studentId, onSuccess, onError) => {
     } catch (error) {
         onError({
             status: null,
-            message: error.message || 'Network error',
+            message: error instanceof Error ? error.message : 'Network error',
             error
         });
     }
 };
-
-

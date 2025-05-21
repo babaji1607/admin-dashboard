@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { getAllReceipts } from "../../api/FeeReceipts";
 import { useNavigate } from "react-router";
 import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
-import { getAttendanceSessions } from "../../api/Attendance";
 
 export default function AttendanceTable() {
     const navigate = useNavigate();
@@ -18,19 +17,16 @@ export default function AttendanceTable() {
             navigate("/signin");
             return;
         }
-        getAttendanceSessions(
+        getAllReceipts(
             1,                 // page
             10,                // limit
             token,             // auth token
-            undefined,         // class_name (not applying filter)
-            undefined,         // date
-            undefined,         // teacher_id
             data => {          // onSuccess
                 console.log('data', data);
                 setTableData(data);
             },
-            () => {            // onError
-                console.log('error');
+            (error) => {            // onError
+                console.log('error', error);
             }
         );
     }, []);

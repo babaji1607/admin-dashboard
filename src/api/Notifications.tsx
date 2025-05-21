@@ -1,12 +1,15 @@
-import { GLOBAL_URL } from "../../utils"
+import { GLOBAL_URL } from "../../utils";
+
+interface ApiResponse {
+    data?: any;
+    status?: number;
+}
 
 export const getNotificationHistory = async (
-    // page: number,
-    // limit: number,  have to implement
     token: string,
-    onSucess = (data: any) => { },
-    onError = () => { }
-) => {
+    onSuccess: (data: any) => void = () => {},
+    onError: () => void = () => {}
+): Promise<ApiResponse> => {
     try {
         const url = `${GLOBAL_URL}/notifications/all`;
 
@@ -21,7 +24,7 @@ export const getNotificationHistory = async (
         const data = await response.json();
 
         if (response.status === 200) {
-            onSucess(data);
+            onSuccess(data);
         } else {
             onError();
         }
@@ -31,8 +34,8 @@ export const getNotificationHistory = async (
             status: response.status
         };
     } catch (e) {
-        console.log(e);
+        console.error("Error fetching notifications:", e);
         onError();
         return {};
     }
-}
+};

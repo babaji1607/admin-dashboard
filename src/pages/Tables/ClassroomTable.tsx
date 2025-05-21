@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -13,17 +13,36 @@ interface OptionType {
     value: string | number;
 }
 
-const ClassCreationModal = ({ isOpen, onClose, onSubmit }) => {
-    const [formData, setFormData] = useState({
+interface Classroom {
+    id: string;
+    name: string;
+    teacher_id: string;
+    // add other classroom properties here if needed
+}
+
+interface NotificationStatus {
+    show: boolean;
+    success: boolean;
+    message: string;
+}
+
+interface ClassCreationModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (formData: { name: string; teacher_id: string }) => void;
+}
+
+const ClassCreationModal: React.FC<ClassCreationModalProps> = ({ isOpen, onClose, onSubmit }) => {
+    const [formData, setFormData] = useState<{ name: string; teacher_id: string }>({
         name: "",
-        teacher_id: generateUUID() // Generate a temporary UUID for teacher_id
+        teacher_id: generateUUID(), // Temporary UUID
     });
 
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [selectedTeacher, setSelectedTeacher] = useState<OptionType | null>(null)
+    const [error, setError] = useState<string>("");
+    const [selectedTeacher, setSelectedTeacher] = useState<OptionType | null>(null);
 
-    const handleChange = (e) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
@@ -33,18 +52,18 @@ const ClassCreationModal = ({ isOpen, onClose, onSubmit }) => {
 
     const handleTeacherChange = (option: OptionType | null) => {
         setSelectedTeacher(option);
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            teacher_id: option ? option.value.toString() : ""
+            teacher_id: option ? option.value.toString() : "",
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         setError("");
         onSubmit(formData);
-        setLoading(false)
+        setLoading(false);
     };
 
     if (!isOpen) return null;
@@ -65,12 +84,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSubmit }) => {
                             viewBox="0 0 24 24"
                             xmlns="http://www.w3.org/2000/svg"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            ></path>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
@@ -83,10 +97,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSubmit }) => {
 
                 <form onSubmit={handleSubmit} className="p-5">
                     <div className="mb-4">
-                        <label
-                            htmlFor="name"
-                            className="mb-2.5 block font-medium text-gray-700 dark:text-white"
-                        >
+                        <label htmlFor="name" className="mb-2.5 block font-medium text-gray-700 dark:text-white">
                             Class Name
                         </label>
                         <input
@@ -102,30 +113,15 @@ const ClassCreationModal = ({ isOpen, onClose, onSubmit }) => {
                     </div>
 
                     <div className="mb-6">
-                        <label
-                            htmlFor="teacher_id"
-                            className="mb-2.5 block font-medium text-gray-700 dark:text-white"
-                        >
+                        <label htmlFor="teacher_id" className="mb-2.5 block font-medium text-gray-700 dark:text-white">
                             Teacher ID
                         </label>
-                        {/* <input
-                            type="text"
-                            id="teacher_id"
-                            name="teacher_id"
-                            value={formData.teacher_id}
-                            onChange={handleChange}
-                            placeholder="Teacher ID"
-                            className="w-full dark:text-white text-black rounded-lg border border-gray-200 bg-transparent px-5 py-3 text-theme-sm font-medium outline-none transition focus:border-blue-500 active:border-blue-500 disabled:cursor-default disabled:bg-gray-100 dark:border-white/[0.05] dark:bg-white/[0.03] dark:focus:border-blue-500 dark:disabled:bg-gray-800"
-                            disabled
-                        /> */}
                         <SelectDropdownTeachers
-                            // options={classOptions}
                             value={selectedTeacher}
                             onChange={handleTeacherChange}
-                            placeholder="Select class..."
+                            placeholder="Select teacher..."
                             isClearable={true}
                         />
-
                         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             A temporary teacher ID is generated automatically
                         </p>
@@ -147,9 +143,25 @@ const ClassCreationModal = ({ isOpen, onClose, onSubmit }) => {
                         >
                             {loading ? (
                                 <>
-                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    <svg
+                                        className="animate-spin h-5 w-5 text-white"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        ></circle>
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
                                     </svg>
                                     Creating...
                                 </>
@@ -162,12 +174,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSubmit }) => {
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
                                     >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                        />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                     </svg>
                                     Create Class
                                 </>
@@ -180,12 +187,12 @@ const ClassCreationModal = ({ isOpen, onClose, onSubmit }) => {
     );
 };
 
-export default function ClassroomTable() {
+const ClassroomTable: React.FC = () => {
     const navigate = useNavigate();
-    const [tableData, setTableData] = useState([]);
+    const [tableData, setTableData] = useState<Classroom[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [notificationStatus, setNotificationStatus] = useState({
+    // const [isLoading, setIsLoading] = useState(false);
+    const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>({
         show: false,
         success: false,
         message: "",
@@ -202,8 +209,7 @@ export default function ClassroomTable() {
             token,
             0,
             10,
-            (data) => {
-                console.log("data", data);
+            (data: Classroom[]) => {
                 setTableData(data);
             },
             (error) => {
@@ -216,144 +222,135 @@ export default function ClassroomTable() {
         fetchClassrooms();
     }, []);
 
-    const handleRowClick = (row) => {
+    const handleRowClick = (row: Classroom) => {
         navigate("/classroom_form", { state: row });
     };
 
-    const handleCreateClass = (formData) => {
-        setIsLoading(true);
+    const handleCreateClass = (formData: { name: string; teacher_id: string }) => {
+        // setIsLoading(true);
         const token = localStorage.getItem("token");
+        if (!token) {
+            // setIsLoading(false);
+            navigate("/signin");
+            return;
+        }
 
         createClassroom(
             token,
             formData,
-            (data) => {
-                setIsLoading(false);
+            () => {
+                // setIsLoading(false);
                 setIsModalOpen(false);
-                // Show success notification
                 setNotificationStatus({
                     show: true,
                     success: true,
                     message: "Class created successfully!",
                 });
 
-                // Hide notification after 3 seconds
                 setTimeout(() => {
-                    setNotificationStatus(prev => ({ ...prev, show: false }));
-                }, 3000);
+                    setNotificationStatus({ show: false, success: false, message: "" });
+                }, 2000);
 
-                // Refresh the classroom list
                 fetchClassrooms();
             },
             (error) => {
-                setIsLoading(false);
-                console.error("Error creating classroom:", error);
-                // Show error notification
+                // setIsLoading(false);
                 setNotificationStatus({
                     show: true,
                     success: false,
-                    message: error.message || "Failed to create class",
+                    message: `Error creating class: ${error.message}`,
                 });
 
-                // Hide notification after 3 seconds
                 setTimeout(() => {
-                    setNotificationStatus(prev => ({ ...prev, show: false }));
-                }, 3000);
+                    setNotificationStatus({ show: false, success: false, message: "" });
+                }, 2000);
             }
         );
     };
 
-    const handleDeleteClass = (classId) => {
-        if (window.confirm("Are you sure you want to delete this class?")) {
-            const token = localStorage.getItem("token");
-
-            deleteClassroom(
-                token,
-                classId,
-                () => {
-                    // Show success notification
-                    setNotificationStatus({
-                        show: true,
-                        success: true,
-                        message: "Class deleted successfully!",
-                    });
-
-                    // Hide notification after 3 seconds
-                    setTimeout(() => {
-                        setNotificationStatus(prev => ({ ...prev, show: false }));
-                    }, 3000);
-
-                    // Refresh the classroom list after successful deletion
-                    fetchClassrooms();
-                },
-                (error) => {
-                    console.error("Error deleting classroom:", error);
-                    // Show error notification
-                    setNotificationStatus({
-                        show: true,
-                        success: false,
-                        message: error.message || "Failed to delete class",
-                    });
-
-                    // Hide notification after 3 seconds
-                    setTimeout(() => {
-                        setNotificationStatus(prev => ({ ...prev, show: false }));
-                    }, 3000);
-                }
-            );
+    const handleDeleteClassroom = (id: string) => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            navigate("/signin");
+            return;
         }
+
+        deleteClassroom(
+            token,
+            id,
+            () => {
+                fetchClassrooms();
+            },
+            (error) => {
+                setNotificationStatus({
+                    show: true,
+                    success: false,
+                    message: `Error deleting classroom: ${error.message}`,
+                });
+
+                setTimeout(() => {
+                    setNotificationStatus({ show: false, success: false, message: "" });
+                }, 2000);
+            }
+        );
     };
+
+    // Prepare data for BasicTableOne
+    const columns = [
+        { key: "name", header: "Class Name" },
+        { key: "teacher_id", header: "Teacher ID" },
+        {
+            key: "actions",
+            header: "Actions",
+            render: (row: Classroom) => (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClassroom(row.id);
+                    }}
+                    className="text-red-600 hover:text-red-800 font-semibold"
+                    aria-label={`Delete class ${row.name}`}
+                >
+                    Delete
+                </button>
+            ),
+        },
+    ];
 
     return (
         <>
-            <PageMeta
-                title="Classrooms Dashboard | School Management System"
-                description="View and manage your classrooms"
+            <PageMeta title="Classroom Table" description="Classroom Table" />
+            <PageBreadcrumb
+                pageTitle="Classrooms"
+            // breadcrumbItems={[{ label: "Home", link: "/" }, { label: "Classrooms" }]}
             />
-            <PageBreadcrumb pageTitle="Classrooms" />
-            <div className="space-y-6">
-                {/* Notification status message */}
-                {notificationStatus.show && (
-                    <div
-                        className={`p-4 mb-4 text-sm rounded-lg ${notificationStatus.success
-                            ? "bg-green-100 text-green-700 dark:bg-green-200 dark:text-green-800"
-                            : "bg-red-100 text-red-700 dark:bg-red-200 dark:text-red-800"
-                            }`}
-                    >
-                        {notificationStatus.message}
-                    </div>
-                )}
 
-                {/* Header and Create Button */}
-                <div className="flex justify-between items-center mb-4">
+            {notificationStatus.show && (
+                <div
+                    className={`fixed top-4 right-4 z-50 rounded-lg p-4 text-white ${notificationStatus.success ? "bg-green-600" : "bg-red-600"
+                        }`}
+                >
+                    {notificationStatus.message}
+                </div>
+            )}
+
+            <ComponentCard title="Classroom Table">
+                <div className="mb-4 flex justify-between">
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200"
+                        className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                     >
-                        <span className="text-lg">+</span>
-                        <span>Create Class</span>
+                        Create New Class
                     </button>
                 </div>
 
-                {/* Classrooms Table */}
-                <ComponentCard title="Classrooms">
-                    {/* <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]"> */}
-                    <div className="max-w-full overflow-x-auto">
-                        <BasicTableOne
-                            rowData={tableData}
-                            columns={[
-                                { key: "id", header: "ID" },
-                                { key: "name", header: "Name" },
-                                { key: "contact", header: "Contact" },
-                            ]}
-                            onRowClick={handleRowClick}
-                        />
-                    </div>
-                    {/* </div> */}
-                </ComponentCard>
-            </div>
+                <BasicTableOne
+                    columns={columns}
+                    rowData={tableData}
+                    onRowClick={handleRowClick}
+                />
+            </ComponentCard>
 
-            {/* Class Creation Modal */}
             <ClassCreationModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -361,4 +358,6 @@ export default function ClassroomTable() {
             />
         </>
     );
-}
+};
+
+export default ClassroomTable;

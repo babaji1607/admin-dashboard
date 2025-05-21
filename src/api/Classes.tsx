@@ -1,6 +1,18 @@
 import { GLOBAL_URL } from "../../utils";
 
-export const createClassroom = async (token, classroomData, onSuccess, onError) => {
+interface ErrorResponse {
+    status: number | null;
+    message: string;
+    data?: any;
+    error?: any;
+}
+
+export const createClassroom = async (
+    token: string,
+    classroomData: any,
+    onSuccess: (data: any) => void,
+    onError: (error: ErrorResponse) => void
+): Promise<void> => {
     try {
         const response = await fetch(`${GLOBAL_URL}/classrooms/create`, {
             method: 'POST',
@@ -26,18 +38,23 @@ export const createClassroom = async (token, classroomData, onSuccess, onError) 
     } catch (error) {
         onError({
             status: null,
-            message: error.message || 'Network error',
+            message: error instanceof Error ? error.message : 'Network error',
             error
         });
     }
 };
 
-
-export const getAllClassrooms = async (token, offset = 0, limit = 100, onSuccess, onError) => {
+export const getAllClassrooms = async (
+    token: string,
+    offset: number = 0,
+    limit: number = 100,
+    onSuccess: (data: any) => void,
+    onError: (error: ErrorResponse) => void
+): Promise<void> => {
     try {
         const url = new URL(`${GLOBAL_URL}/classrooms/showall`);
-        url.searchParams.append('offset', offset);
-        url.searchParams.append('limit', limit);
+        url.searchParams.append('offset', offset.toString());
+        url.searchParams.append('limit', limit.toString());
 
         const response = await fetch(url.toString(), {
             method: 'GET',
@@ -61,13 +78,18 @@ export const getAllClassrooms = async (token, offset = 0, limit = 100, onSuccess
     } catch (error) {
         onError({
             status: null,
-            message: error.message || 'Network error',
+            message: error instanceof Error ? error.message : 'Network error',
             error
         });
     }
 };
 
-export const deleteClassroom = async (token, classroomId, onSuccess, onError) => {
+export const deleteClassroom = async (
+    token: string,
+    classroomId: string,
+    onSuccess: (data: any) => void,
+    onError: (error: ErrorResponse) => void
+): Promise<void> => {
     try {
         const url = `${GLOBAL_URL}/classrooms/classroom/${classroomId}`;
 
@@ -80,7 +102,7 @@ export const deleteClassroom = async (token, classroomId, onSuccess, onError) =>
         });
 
         if (response.ok) {
-            const data = await response.json(); // or response.text() if empty response expected
+            const data = await response.json();
             onSuccess(data);
         } else {
             const errorData = await response.json();
@@ -93,7 +115,7 @@ export const deleteClassroom = async (token, classroomId, onSuccess, onError) =>
     } catch (error) {
         onError({
             status: null,
-            message: error.message || 'Network error',
+            message: error instanceof Error ? error.message : 'Network error',
             error
         });
     }

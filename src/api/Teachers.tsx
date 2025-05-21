@@ -1,12 +1,24 @@
 import { GLOBAL_URL } from "../../utils";
 
+interface ApiResponse {
+    data?: any;
+    status?: number;
+}
+
+interface ErrorResponse {
+    status: number | null;
+    message: string;
+    data?: any;
+    error?: any;
+}
+
 export const getAllTeachers = async (
     offset: number,
     limit: number,
     token: string,
-    onSucess = (data: any) => { },
-    onError = () => { }
-) => {
+    onSuccess: (data: any) => void = () => { },
+    onError: (data: any) => void = () => { }
+): Promise<ApiResponse> => {
     try {
         const url = `${GLOBAL_URL}/teachers/showall?offset=${offset}&limit=${limit}`;
 
@@ -21,24 +33,26 @@ export const getAllTeachers = async (
         const data = await response.json();
 
         if (response.status === 200) {
-            onSucess(data);
-        } else {
-            onError();
-        }
+            onSuccess(data);
+        } 
 
         return {
             data: data,
             status: response.status
         };
     } catch (e) {
-        console.log(e);
-        onError();
+        console.error("Error fetching teachers:", e);
+        onError(e);
         return {};
     }
-}
+};
 
-
-export const createTeacher = async (token, teacherData, onSuccess, onError) => {
+export const createTeacher = async (
+    token: string,
+    teacherData: any,
+    onSuccess: (data: any) => void,
+    onError: (error: ErrorResponse) => void
+): Promise<void> => {
     try {
         const response = await fetch(`${GLOBAL_URL}/teachers/create/`, {
             method: 'POST',
@@ -53,7 +67,7 @@ export const createTeacher = async (token, teacherData, onSuccess, onError) => {
         const data = await response.json();
 
         if (response.ok) {
-            onSuccess(data); // success callback
+            onSuccess(data);
         } else {
             onError({
                 status: response.status,
@@ -64,13 +78,19 @@ export const createTeacher = async (token, teacherData, onSuccess, onError) => {
     } catch (error) {
         onError({
             status: null,
-            message: error.message || 'Network error',
+            message: error instanceof Error ? error.message : 'Network error',
             error
         });
     }
 };
 
-export const updateTeacher = async (token, teacherId, teacherData, onSuccess, onError) => {
+export const updateTeacher = async (
+    token: string,
+    teacherId: string,
+    teacherData: any,
+    onSuccess: (data: any) => void,
+    onError: (error: ErrorResponse) => void
+): Promise<void> => {
     try {
         const response = await fetch(`${GLOBAL_URL}/teachers/teacher/${teacherId}/`, {
             method: 'PUT',
@@ -96,14 +116,18 @@ export const updateTeacher = async (token, teacherId, teacherData, onSuccess, on
     } catch (error) {
         onError({
             status: null,
-            message: error.message || 'Network error',
+            message: error instanceof Error ? error.message : 'Network error',
             error
         });
     }
 };
 
-
-export const deleteTeacher = async (token, teacherId, onSuccess, onError) => {
+export const deleteTeacher = async (
+    token: string,
+    teacherId: string,
+    onSuccess: (data: any) => void,
+    onError: (error: ErrorResponse) => void
+): Promise<void> => {
     try {
         const response = await fetch(`${GLOBAL_URL}/teachers/teacher/${teacherId}`, {
             method: 'DELETE',
@@ -127,9 +151,8 @@ export const deleteTeacher = async (token, teacherId, onSuccess, onError) => {
     } catch (error) {
         onError({
             status: null,
-            message: error.message || 'Network error',
+            message: error instanceof Error ? error.message : 'Network error',
             error
         });
     }
 };
-

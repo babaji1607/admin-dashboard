@@ -1,35 +1,30 @@
 import { useState } from "react";
-// import { useSignIn } from "@clerk/clerk-react";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
-import { adminLogin } from '../../api/Auth'
+import { adminLogin } from "../../api/Auth";
 import { useNavigate } from "react-router";
 
 export default function SignInForm() {
-  // const { signIn, setActive, isLoaded } = useSignIn();
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
-    const result = await adminLogin(email, password, (data) => {
+    const result = await adminLogin(email, password, (data: any) => {
       console.log("Login successful", data);
       localStorage.setItem("token", data.access_token);
     });
 
     if (result.success) {
-      // If needed, you can save result.data (e.g., token/user info) or redirect
       console.log("Login successful", result.data);
-      // TODO: setActive or navigate, depending on your flow
-      navigate("/")
+      navigate("/");
     } else {
       setError(result.message);
     }
@@ -56,7 +51,9 @@ export default function SignInForm() {
                 <Input
                   placeholder="info@gmail.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setEmail(e.target.value)
+                  }
                 />
               </div>
               <div>
@@ -68,11 +65,16 @@ export default function SignInForm() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPassword(e.target.value)
+                    }
                   />
                   <span
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                    role="button"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    tabIndex={0}
                   >
                     {showPassword ? (
                       <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
