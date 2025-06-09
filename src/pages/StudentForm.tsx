@@ -29,6 +29,8 @@ const StudentForm = () => {
     FatherContact: data.FatherContact || "",
     MotherContact: data.MotherContact || "",
     class_id: data.class_id || "",
+    notification_token: data.notification_token || ""
+
   });
 
   const [authFields, setAuthFields] = useState({
