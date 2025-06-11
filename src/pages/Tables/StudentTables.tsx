@@ -10,6 +10,7 @@ export default function StudentTables() {
     const navigate = useNavigate();
     const [tableData, setTableData] = useState([]);
 
+
     useEffect(() => {
         const token = localStorage.getItem("token");
 
@@ -60,6 +61,7 @@ export default function StudentTables() {
                 <ComponentCard title="Students data">
                     <BasicTableOne
                         rowData={tableData}
+                        notificationChannel={'student'}
                         columns={[
                             { key: "id", header: "ID" },
                             { key: "name", header: "Name" },

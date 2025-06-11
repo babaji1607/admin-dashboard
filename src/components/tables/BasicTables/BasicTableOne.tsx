@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "../../ui/table";
 import NotificationForm from "./NotificationForm";
+import { sendMassNotification, sendSingleNotification } from "../../../api/Notifications";
 
 interface Column {
   key: string;
@@ -19,12 +20,14 @@ interface DynamicTableProps {
   rowData: any[];     // Array of objects with keys matching column keys
   pageSize?: number;
   onRowClick?: (row: any) => void; // Made onRowClick optional with proper typing
+  notificationChannel: string; // Made onRowClick optional with proper typing
 }
 
 export default function DynamicTableWithNotification({
   columns,
   pageSize = 5,
   rowData,
+  notificationChannel,
   onRowClick = () => { }
 }: DynamicTableProps) {
   // Keep only essential state
@@ -33,7 +36,7 @@ export default function DynamicTableWithNotification({
   // Notification form state
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
   const [isNotifyAllFormOpen, setIsNotifyAllFormOpen] = useState<boolean>(false);
-  const [selectedRecipient, setSelectedRecipient] = useState<string>("");
+  const [selectedRecipient, setSelectedRecipient] = useState<any>("");
   const [notificationStatus, setNotificationStatus] = useState<{
     show: boolean;
     success: boolean;
@@ -58,7 +61,7 @@ export default function DynamicTableWithNotification({
         onClick={(e) => {
           // Stop event propagation to prevent triggering onRowClick
           e.stopPropagation();
-          openNotificationForm(row.name || row.title || row.id || "User");
+          openNotificationForm(row);
         }}
         className="p-2 text-blue-600 rounded-full hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/30 transition-colors duration-200"
         title="Send Notification"
@@ -93,7 +96,7 @@ export default function DynamicTableWithNotification({
   };
 
   // Open notification form for a single recipient
-  const openNotificationForm = (recipient: string) => {
+  const openNotificationForm = (recipient: any) => {
     setSelectedRecipient(recipient);
     setIsFormOpen(true);
   };
@@ -104,37 +107,63 @@ export default function DynamicTableWithNotification({
   };
 
   // Handle notification form submission for single recipient
-  const handleNotificationSubmit = (title: string, message: string) => {
-    alert(`Notification sent to ${selectedRecipient}\nTitle: ${title}\nMessage: ${message}`);
+  const handleNotificationSubmit = async (title: string, message: string) => {
+    // alert(`Notification sent to ${selectedRecipient}\nTitle: ${title}\nMessage: ${message}`);
+    console.log(selectedRecipient?.notification_token)
+    // this is very important cuz otherwise it will be sent to all students
+    if (!selectedRecipient?.notification_token) {
+      alert('You cant send this student notification cuz maybe he is not logged in')
+      return
+    }
 
-    // Show success message
-    setNotificationStatus({
-      show: true,
-      success: true,
-      message: `Notification sent to ${selectedRecipient} successfully!`,
-    });
-
-    // Hide the status message after 3 seconds
-    setTimeout(() => {
-      setNotificationStatus((prev) => ({ ...prev, show: false }));
-    }, 3000);
+    await sendSingleNotification(
+      title,
+      message,
+      notificationChannel, // this is recipient_type as channel name
+      selectedRecipient?.id,
+      selectedRecipient?.notification_token,
+      (data) => {
+        console.log(data)
+        // Show success message
+        setNotificationStatus({
+          show: true,
+          success: true,
+          message: `Notification sent to ${selectedRecipient} successfully!`,
+        });
+        // Hide the status message after 3 seconds
+        setTimeout(() => {
+          setNotificationStatus((prev) => ({ ...prev, show: false }));
+        }, 3000);
+      },
+      (data) => {
+        console.log('fail to send notification from server', data)
+      }
+    )
   };
 
+
+
   // Handle notification form submission for all recipients
-  const handleNotifyAllSubmit = (title: string, message: string) => {
-    alert(`Notification sent to all students\nTitle: ${title}\nMessage: ${message}`);
+  const handleNotifyAllSubmit = async (title: string, message: string) => {
+    // alert(`Notification sent to all students\nTitle: ${title}\nMessage: ${message}`);
 
-    // Show success message
-    setNotificationStatus({
-      show: true,
-      success: true,
-      message: `Notification sent to all students successfully!`,
-    });
-
-    // Hide the status message after 3 seconds
-    setTimeout(() => {
-      setNotificationStatus((prev) => ({ ...prev, show: false }));
-    }, 3000);
+    await sendMassNotification(
+      title,
+      message,
+      notificationChannel,
+      (data) => {
+        // Show success message
+        setNotificationStatus({
+          show: true,
+          success: true,
+          message: `Notification sent to all students successfully!`,
+        });
+        // Hide the status message after 3 seconds
+        setTimeout(() => {
+          setNotificationStatus((prev) => ({ ...prev, show: false }));
+        }, 3000);
+      }
+    )
   };
 
   // Generate pagination buttons
@@ -337,7 +366,7 @@ export default function DynamicTableWithNotification({
       <NotificationForm
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        recipient={selectedRecipient}
+        recipient={selectedRecipient.name}
         onSubmit={handleNotificationSubmit}
       />
 

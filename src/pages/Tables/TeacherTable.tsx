@@ -60,6 +60,7 @@ export default function TeacherTables() {
                 <ComponentCard title="Teachers data">
                     <BasicTableOne
                         rowData={tableData}
+                        notificationChannel={'teacher'}
                         columns={[
                             { key: "id", header: "ID" },
                             { key: "name", header: "Name" },

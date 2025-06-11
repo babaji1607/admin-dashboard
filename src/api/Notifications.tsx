@@ -7,8 +7,8 @@ interface ApiResponse {
 
 export const getNotificationHistory = async (
     token: string,
-    onSuccess: (data: any) => void = () => {},
-    onError: () => void = () => {}
+    onSuccess: (data: any) => void = () => { },
+    onError: () => void = () => { }
 ): Promise<ApiResponse> => {
     try {
         const url = `${GLOBAL_URL}/notifications/all`;
@@ -39,3 +39,83 @@ export const getNotificationHistory = async (
         return {};
     }
 };
+
+
+export const sendMassNotification = async (title: string, body: string, recipient_type: string, onSuccess = (data: any) => { }, onError = (data: any) => { }) => {
+    try {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            throw new Error('Authentication token not found in localStorage.');
+        }
+
+        const response = await fetch(`${GLOBAL_URL}/notifications/`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title,
+                message: body,
+                recipient_type
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Error ${response.status}: ${errorData.detail || response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Notification sent successfully:', data);
+        onSuccess(data)
+        return data;
+
+    } catch (error) {
+        console.error('Failed to send notification:', error.message);
+        onError(error)
+    }
+}
+
+
+export const sendSingleNotification = async (title: string, body: string, recipient_type: string, recipient_id: string, notfication_token: string, onSuccess = (data: any) => { }, onError = (data: any) => { }) => {
+    try {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            throw new Error('Authentication token not found in localStorage.');
+        }
+
+        const response = await fetch(`${GLOBAL_URL}/notifications/`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title,
+                message: body,
+                recipient_type,
+                recipient_id,
+                notfication_token
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Error ${response.status}: ${errorData.detail || response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Notification sent successfully:', data);
+        onSuccess(data)
+        return data;
+
+    } catch (error) {
+        console.error('Failed to send notification:', error.message);
+        onError(error)
+    }
+}
