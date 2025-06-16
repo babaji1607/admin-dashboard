@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { getAllReceipts } from "../../api/FeeReceipts";
 import { useNavigate } from "react-router";
 import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
+import { getAttendanceSessions } from "../../api/Attendance";
 
 export default function AttendanceTable() {
     const navigate = useNavigate();
@@ -17,10 +18,13 @@ export default function AttendanceTable() {
             navigate("/signin");
             return;
         }
-        getAllReceipts(
+        getAttendanceSessions(
             1,                 // page
-            10,                // limit
+            100,                // limit
             token,             // auth token
+            undefined,
+            undefined,
+            undefined,
             data => {          // onSuccess
                 console.log('data', data);
                 setTableData(data);
@@ -43,6 +47,7 @@ export default function AttendanceTable() {
                 <ComponentCard title="Students data">
                     <BasicTableTwo
                         rowData={tableData}
+                        navigationPath="/attendance-detail"
                         columns={[
                             {
                                 key: "id",

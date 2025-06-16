@@ -37,18 +37,19 @@ export default function FeeReceipts() {
                 <ComponentCard title="Students data">
                     <BasicTableTwo
                         rowData={tableData}
+                        navigationPath="/fee-detail"
                         columns={[
-                            {
-                                key: "id",
-                                header: "ID"
-                            },
-                            {
-                                key: "student_id",
-                                header: "Student ID"
-                            },
                             {
                                 key: "paid_on",
                                 header: "Pay Date"
+                            },
+                            {
+                                key: "total_amount",
+                                header: "Amount (₹/-)"
+                            },
+                            {
+                                key: "student_id",
+                                header: "Sutdent ID"
                             }
                         ]}
                     />

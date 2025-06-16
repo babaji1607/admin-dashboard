@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import {
   Table,
   TableBody,
@@ -17,14 +18,19 @@ interface BasicTableTwoProps {
   columns: Column[];
   rowData: any[];
   pageSize?: number;
+  navigationPath?: string;
+  onRowClick?: (rowData: any) => void;
 }
 
 export default function BasicTableTwo({
   columns,
   rowData,
   pageSize = 5,
+  navigationPath = '#',
+  onRowClick,
 }: BasicTableTwoProps) {
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const navigate = useNavigate();
 
   const totalPages = Math.max(1, Math.ceil(rowData.length / pageSize));
 
@@ -32,6 +38,10 @@ export default function BasicTableTwo({
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+  };
+
+  const handleRowClick = (rowData: any) => {
+    navigate(navigationPath, { state: { rowData } });
   };
 
   const renderPagination = () => {
@@ -45,7 +55,7 @@ export default function BasicTableTwo({
         className={`px-3 py-1 mx-1 rounded ${currentPage === 1
           ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400"
           : "bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-        }`}
+          }`}
       >
         Previous
       </button>
@@ -75,7 +85,7 @@ export default function BasicTableTwo({
           className={`px-3 py-1 mx-1 rounded ${i === currentPage
             ? "bg-blue-500 text-white dark:bg-blue-600"
             : "bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-          }`}
+            }`}
         >
           {i}
         </button>
@@ -106,7 +116,7 @@ export default function BasicTableTwo({
         className={`px-3 py-1 mx-1 rounded ${currentPage === totalPages
           ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400"
           : "bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-        }`}
+          }`}
       >
         Next
       </button>
@@ -135,7 +145,11 @@ export default function BasicTableTwo({
             </TableHeader>
             <TableBody>
               {displayData.map((row, rowIndex) => (
-                <TableRow key={rowIndex}>
+                <TableRow
+                  key={rowIndex}
+                  onClick={() => handleRowClick(row)}
+                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors duration-150"
+                >
                   {columns.map((column, colIndex) => (
                     <TableCell key={colIndex} className="px-5 py-3 text-sm text-gray-700 dark:text-gray-300">
                       {column.render ? column.render(row) : row[column.key]}
