@@ -29,15 +29,15 @@ const navItems: NavItem[] = [
   //   name: "Dashboard",
   //   subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   // },
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/",
-  },
+  // {
+  //   icon: <GridIcon />,
+  //   name: "Dashboard",
+  //   path: "/",
+  // },
   {
     icon: <TableIcon />,
     name: "Classes",
-    path: "/classroom-tables",
+    path: "/",
   },
   {
     icon: <TableIcon />,
@@ -323,7 +323,7 @@ const AppSidebar: React.FC = () => {
         <Link to="/">
           {isExpanded || isHovered || isMobileOpen ? (
             <>
-              <img
+              {/* <img
                 className="dark:hidden"
                 src="/images/logo/logo.svg"
                 alt="Logo"
@@ -336,7 +336,10 @@ const AppSidebar: React.FC = () => {
                 alt="Logo"
                 width={150}
                 height={40}
-              />
+              /> */}
+              <h1 className="dark:text-white text-blue-700 text-3xl">
+                First Step School
+              </h1>
             </>
           ) : (
             <img

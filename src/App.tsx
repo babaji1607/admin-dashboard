@@ -58,13 +58,14 @@ export default function App() {
             <ProtectedRoute>
               <Routes>
                 <Route element={<AppLayout />}>
-                  <Route index path="/" element={<Home />} />
+                  {/* <Route index path="/" element={<Home />} /> */}
                   <Route path="/profile" element={<UserProfiles />} />
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/blank" element={<Blank />} />
                   <Route path="/form-elements" element={<FormElements />} />
                   <Route path="/teacher-tables" element={<TeacherTable />} />
-                  <Route path="/classroom-tables" element={<ClassroomTable />} />
+                  {/* <Route path="/classroom-tables" element={<ClassroomTable />} /> */}
+                  <Route path="/" element={<ClassroomTable />} />
                   <Route path="/student-tables" element={<StudentTables />} />
                   <Route path="/fee-receipts" element={<FeeReceipts />} />
                   <Route path="/notification-history" element={<NotificationHistory />} />

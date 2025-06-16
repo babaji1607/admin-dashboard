@@ -56,7 +56,7 @@ export default function UserDropdown() {
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">
-          {user?.name || "Anonymous"}
+          {user?.name || "Admin"}
         </span>
 
         <svg
