@@ -153,6 +153,7 @@ export default function DynamicTableWithNotification({
       notificationChannel,
       (data) => {
         // Show success message
+        console.log(data)
         setNotificationStatus({
           show: true,
           success: true,
@@ -162,6 +163,9 @@ export default function DynamicTableWithNotification({
         setTimeout(() => {
           setNotificationStatus((prev) => ({ ...prev, show: false }));
         }, 3000);
+      },
+      (error) => {
+        console.log(error)
       }
     )
   };

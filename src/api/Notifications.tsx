@@ -41,7 +41,13 @@ export const getNotificationHistory = async (
 };
 
 
-export const sendMassNotification = async (title: string, body: string, recipient_type: string, onSuccess = (data: any) => { }, onError = (data: any) => { }) => {
+export const sendMassNotification = async (
+    title: string,
+    body: string,
+    recipient_type: string,
+    onSuccess: (data: any) => void,
+    onError: (data: any) => void
+) => {
     try {
         const token = localStorage.getItem('token');
 
@@ -73,14 +79,22 @@ export const sendMassNotification = async (title: string, body: string, recipien
         onSuccess(data)
         return data;
 
-    } catch (error) {
-        console.error('Failed to send notification:', error.message);
+    } catch (error: any) {
+        console.error('Failed to send notification:', error);
         onError(error)
     }
 }
 
 
-export const sendSingleNotification = async (title: string, body: string, recipient_type: string, recipient_id: string, notfication_token: string, onSuccess = (data: any) => { }, onError = (data: any) => { }) => {
+export const sendSingleNotification = async (
+    title: string,
+    body: string,
+    recipient_type: string,
+    recipient_id: string,
+    notfication_token: string,
+    onSuccess: (data: any) => void,
+    onError: (data: any) => void
+) => {
     try {
         const token = localStorage.getItem('token');
 
@@ -114,8 +128,8 @@ export const sendSingleNotification = async (title: string, body: string, recipi
         onSuccess(data)
         return data;
 
-    } catch (error) {
-        console.error('Failed to send notification:', error.message);
+    } catch (error: any) {
+        console.error('Failed to send notification:', error);
         onError(error)
     }
 }

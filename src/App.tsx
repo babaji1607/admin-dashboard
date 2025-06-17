@@ -17,7 +17,7 @@ import Calendar from "./pages/Calendar";
 import TeacherTable from "./pages/Tables/TeacherTable"
 import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
-import Home from "./pages/Dashboard/Home";
+// import Home from "./pages/Dashboard/Home";
 import StudentTables from "./pages/Tables/StudentTables";
 import { ReactNode } from "react";
 import FeeReceipts from "./pages/Tables/FeeReceipts";

@@ -44,6 +44,8 @@ export default function BasicTableTwo({
     navigate(navigationPath, { state: { rowData } });
   };
 
+  console.log(onRowClick)
+
   const renderPagination = () => {
     const pages = [];
 

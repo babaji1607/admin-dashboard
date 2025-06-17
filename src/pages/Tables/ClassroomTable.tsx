@@ -348,6 +348,7 @@ const ClassroomTable: React.FC = () => {
                     columns={columns}
                     rowData={tableData}
                     onRowClick={handleRowClick}
+                    notificationChannel=""
                 />
             </ComponentCard>
 

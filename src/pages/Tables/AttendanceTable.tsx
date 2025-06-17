@@ -2,7 +2,6 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import { useEffect, useState } from "react";
-import { getAllReceipts } from "../../api/FeeReceipts";
 import { useNavigate } from "react-router";
 import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
 import { getAttendanceSessions } from "../../api/Attendance";

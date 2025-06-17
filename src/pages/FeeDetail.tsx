@@ -2,8 +2,27 @@ import { useLocation, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { GLOBAL_URL } from '../../utils';
 
+// Define the student details interface
+interface StudentDetails {
+  name?: string;
+  age?: number;
+  classroom?: {
+    name?: string;
+  };
+  FatherName?: string;
+  MotherName?: string;
+  contact?: string;
+  address?: string;
+  user?: {
+    email?: string;
+  };
+  FatherContact?: string;
+  MotherContact?: string;
+  class_id?: string;
+}
+
 // Function to fetch student details
-const fetchStudentDetails = async (studentId, authToken) => {
+const fetchStudentDetails = async (studentId: string, authToken: string | null): Promise<StudentDetails> => {
   try {
     const response = await fetch(
       `${GLOBAL_URL}/students/student/${studentId}/`,
@@ -33,10 +52,10 @@ const FeeReceiptDetailPage = () => {
   const navigate = useNavigate();
   const data = location.state?.rowData;
 
-  // State for student details
-  const [studentDetails, setStudentDetails] = useState(null);
+  // State for student details with proper typing
+  const [studentDetails, setStudentDetails] = useState<StudentDetails | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // You'll need to provide the auth token - this should come from your auth context/state
   const authToken = localStorage.getItem('token');
@@ -131,15 +150,15 @@ const FeeReceiptDetailPage = () => {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">Father Contact</span>
-              <span className="text-gray-700 dark:text-gray-300">{studentDetails.FatherContact || '—'}</span>
+              <span className="text-gray-700 dark:text-gray-300">{studentDetails?.FatherContact || '—'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">Mother Contact</span>
-              <span className="text-gray-700 dark:text-gray-300">{studentDetails.MotherContact || '—'}</span>
+              <span className="text-gray-700 dark:text-gray-300">{studentDetails?.MotherContact || '—'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">Class ID</span>
-              <span className="text-gray-700 dark:text-gray-300">{studentDetails.class_id || '—'}</span>
+              <span className="text-gray-700 dark:text-gray-300">{studentDetails?.class_id || '—'}</span>
             </div>
           </div>
         </div>

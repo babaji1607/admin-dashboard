@@ -2,10 +2,10 @@ import { GLOBAL_URL } from "../../utils";
 
 
 export const createEvent = (
-    formData,
-    token,
-    onSuccess,
-    onError
+    formData: any,
+    token: string | null,
+    onSuccess: (data: any) => void,
+    onError: (data: any) => void
 ) => {
     if (!token) {
         onError({ message: 'Authentication token is missing.' });
@@ -35,7 +35,11 @@ export const createEvent = (
 };
 
 
-export const getActiveEvents = async (token, onSuccess, onError) => {
+export const getActiveEvents = async (
+    token: string,
+    onSuccess: (data: any) => void,
+    onError: (data: any) => void
+) => {
     try {
         const response = await fetch(`${GLOBAL_URL}/events/active`, {
             method: 'GET',

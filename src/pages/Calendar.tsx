@@ -202,6 +202,7 @@ const Calendar: React.FC = () => {
           formData,
           token,
           (data) => {
+            console.log(data)
             populateEvents();
             closeModal();
             resetModalFields();
