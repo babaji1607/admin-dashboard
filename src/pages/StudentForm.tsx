@@ -29,8 +29,9 @@ const StudentForm = () => {
     FatherContact: data.FatherContact || "",
     MotherContact: data.MotherContact || "",
     class_id: data.class_id || "",
-    notification_token: data.notification_token || ""
-
+    notification_token: data.notification_token || "",
+    roll_number: data.roll_number || "",
+    date_of_birth: data.date_of_birth || "",
   });
 
   const [authFields, setAuthFields] = useState({
@@ -68,14 +69,12 @@ const StudentForm = () => {
   };
 
   const validateForm = () => {
-    // Basic validation requires at least name and class_id
     return form.name && form.class_id;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // If in viewing mode (update but not editing), do nothing on submit
     if (isUpdate && !isEditing) {
       return;
     }
@@ -119,7 +118,6 @@ const StudentForm = () => {
         authFields.password,
         authFields.role,
         (userData) => {
-          console.log("User registered successfully", userData);
           createStudent(token, { ...form, user_id: userData.id }, () => {
             setAlert({
               type: "success",
@@ -145,7 +143,7 @@ const StudentForm = () => {
   const renderField = (
     label: string,
     name: keyof typeof form,
-    type: "text" | "number" | "textarea" | "select" = "text",
+    type: "text" | "number" | "textarea" | "select" | "date" = "text",
     editable: boolean = false,
     required: boolean = false
   ) => {
@@ -216,7 +214,6 @@ const StudentForm = () => {
     );
   };
 
-  // Render auth fields only when creating a new student
   const renderAuthFields = () => {
     if (isUpdate) return null;
 
@@ -295,17 +292,17 @@ const StudentForm = () => {
         )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Student Information */}
           <div className="md:col-span-2">
             <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Student Information</h3>
           </div>
           {renderField("Name", "name", "text", true, true)}
           {renderField("Age", "age", "number", true)}
+          {renderField("Roll Number", "roll_number", "number", true)}
+          {renderField("Date of Birth", "date_of_birth", "date", true)}
           {renderField("Contact", "contact", "text", true)}
           {renderField("Address", "address", "textarea", true)}
           {renderField("Class", "class_id", "select", true, true)}
 
-          {/* Parent Information */}
           <div className="md:col-span-2 border-t border-gray-200 dark:border-gray-700 pt-6 mt-2">
             <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Parent Information</h3>
           </div>
@@ -314,7 +311,6 @@ const StudentForm = () => {
           {renderField("Mother's Name", "MotherName", "text", true)}
           {renderField("Mother's Contact", "MotherContact", "text", true)}
 
-          {/* Auth fields only shown when creating a new student */}
           {renderAuthFields()}
 
           <div className="md:col-span-2 mt-4">
