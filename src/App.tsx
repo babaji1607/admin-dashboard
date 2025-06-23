@@ -29,6 +29,7 @@ import ClassroomTable from "./pages/Tables/ClassroomTable";
 import ClassroomForm from "./pages/ClassroomForm";
 import AttendanceDetail from "./pages/AttendanceDetail";
 import FeeDetail from "./pages/FeeDetail";
+import SchoolGallary from './pages/SchoolGallary'
 
 // ✅ Simple ProtectedRoute component
 interface ProtectedRouteProps {
@@ -72,6 +73,7 @@ export default function App() {
                   <Route path="/fee-receipts" element={<FeeReceipts />} />
                   <Route path="/notification-history" element={<NotificationHistory />} />
                   <Route path="/attendance" element={<AttendanceTable />} />
+                  <Route path="/school_gallery" element={<SchoolGallary />} />
                   <Route path="/attendance-detail" element={<AttendanceDetail />} />
                   <Route path="/fee-detail" element={<FeeDetail />} />
                   <Route path="/student_form" element={<StudentForm />} />
