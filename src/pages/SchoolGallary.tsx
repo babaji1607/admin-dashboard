@@ -3,7 +3,13 @@ import YouTube from 'react-youtube';
 import { GLOBAL_URL } from "../../utils";
 
 // ✅ Mock Alert component – replace with actual
-const Alert = ({ variant, title, message }) => (
+interface AlertProps {
+    variant: "success" | "error";
+    title: string;
+    message: string;
+}
+
+const Alert = ({ variant, title, message }: AlertProps) => (
     <div
         className={`p-4 rounded-md ${variant === "error"
             ? "bg-red-100 text-red-800 border border-red-200"
@@ -15,6 +21,7 @@ const Alert = ({ variant, title, message }) => (
     </div>
 );
 
+
 interface GalleryItem {
     id: string;
     imageUrl: string | null;
@@ -25,20 +32,20 @@ interface GalleryItem {
 // ✅ Extract YouTube video ID from URL
 const getYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
-    
+
     const patterns = [
         /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
         /youtube\.com\/v\/([^&\n?#]+)/,
         /youtube\.com\/shorts\/([^&\n?#]+)/
     ];
-    
+
     for (const pattern of patterns) {
         const match = url.match(pattern);
         if (match && match[1]) {
             return match[1];
         }
     }
-    
+
     return null;
 };
 
@@ -245,6 +252,7 @@ const GalleryList = () => {
 
     // ✅ YouTube player event handlers
     const onPlayerReady = (event: any) => {
+        console.log(event)
         // Player is ready
     };
 
