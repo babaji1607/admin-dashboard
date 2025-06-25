@@ -166,6 +166,7 @@ export default function DynamicTableWithNotification({
     setDeleteConfirmation({
       isOpen: true,
       rowToDelete: row,
+      isDeleting: false
     });
   };
 
