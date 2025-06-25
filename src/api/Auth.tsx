@@ -3,8 +3,8 @@ import { GLOBAL_URL } from "../../utils";
 export const adminLogin = async (
     email: string,
     password: string,
-    onSuccess: (data: any) => void = () => {},
-    onError: () => void = () => {}
+    onSuccess: (data: any) => void = () => { },
+    onError: () => void = () => { }
 ): Promise<{
     success: boolean;
     message: string;
@@ -52,7 +52,7 @@ export const adminLogin = async (
 
 export const getUserInfo = async (
     token: string,
-    onSuccess: (data: any) => void = () => {}
+    onSuccess: (data: any) => void = () => { }
 ): Promise<{
     success: boolean;
     message: string;
@@ -124,6 +124,49 @@ export const registerUser = async (
         onError({
             status: 500,
             message: error instanceof Error ? error.message : 'An unexpected error occurred'
+        });
+    }
+};
+
+
+export const deleteUser = async (
+    token: string,
+    userId: string,
+    onSuccess: (response: { message: string; status: number }) => void,
+    onError: (error: {
+        status: number | null;
+        message: string;
+        data?: any;
+        error?: unknown;
+    }) => void
+): Promise<void> => {
+    try {
+        const response = await fetch(`${GLOBAL_URL}/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'accept': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            onSuccess({
+                message: 'User deleted successfully',
+                status: response.status
+            });
+        } else {
+            const data = await response.json();
+            onError({
+                status: response.status,
+                message: data?.detail || 'Failed to delete user',
+                data
+            });
+        }
+    } catch (error) {
+        onError({
+            status: null,
+            message: error instanceof Error ? error.message : 'Network error',
+            error
         });
     }
 };

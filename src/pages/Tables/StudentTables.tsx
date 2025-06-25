@@ -3,12 +3,38 @@ import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
 import { useEffect, useState } from "react";
-import { getAllStudents } from "../../api/Students";
+import { getAllStudents, deleteStudent } from "../../api/Students";
 import { useNavigate } from "react-router";
 
 export default function StudentTables() {
     const navigate = useNavigate();
     const [tableData, setTableData] = useState([]);
+
+
+    
+
+    const handleStudentDelete = async (studentId: string) => {
+        try {
+            const token = localStorage.getItem('token')
+            if (!token) {
+                console.log('There is not token to process request')
+                navigate('/')
+                return
+            }
+            await deleteStudent(
+                token,
+                studentId,
+                (data) => {
+                    console.log('Student delted successfully', data)
+                    // deleteStudentCredentials()
+                },
+                (error) => console.log('Something went wrong while deleting', error)
+            )
+
+        } catch (e) {
+            console.log(e)
+        }
+    }
 
 
     useEffect(() => {
@@ -68,6 +94,7 @@ export default function StudentTables() {
                             { key: "contact", header: "Contact" },
                         ]}
                         onRowClick={handleRowClick}
+                        deleteRow={handleStudentDelete}
                     />
                 </ComponentCard>
             </div>

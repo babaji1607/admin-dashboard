@@ -133,7 +133,7 @@ export const deleteStudent = async (
     onError: (error: ErrorResponse) => void
 ): Promise<void> => {
     try {
-        const response = await fetch(`${GLOBAL_URL}/students/student/${studentId}/`, {
+        const response = await fetch(`${GLOBAL_URL}/students/student/${studentId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`,

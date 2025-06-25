@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -8,6 +8,7 @@ import {
 } from "../../ui/table";
 import NotificationForm from "./NotificationForm";
 import { sendMassNotification, sendSingleNotification } from "../../../api/Notifications";
+import { deleteUser } from "../../../api/Auth";
 
 interface Column {
   key: string;
@@ -21,6 +22,8 @@ interface DynamicTableProps {
   pageSize?: number;
   onRowClick?: (row: any) => void; // Made onRowClick optional with proper typing
   notificationChannel: string; // Made onRowClick optional with proper typing
+  deleteRow?: (row: any) => Promise<void> | void; // Delete function from props - can be async
+  onRowDeleted?: (deletedRow: any) => void; // Callback after successful deletion
 }
 
 export default function DynamicTableWithNotification({
@@ -28,10 +31,14 @@ export default function DynamicTableWithNotification({
   pageSize = 5,
   rowData,
   notificationChannel,
-  onRowClick = () => { }
+  onRowClick = () => { },
+  deleteRow = () => { }, // Default empty function
+  onRowDeleted = () => { } // Default empty function
 }: DynamicTableProps) {
   // Keep only essential state
   const [currentPage, setCurrentPage] = useState<number>(1);
+  // Local state for managing row data with deletions
+  const [localRowData, setLocalRowData] = useState<any[]>(rowData);
 
   // Notification form state
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
@@ -47,8 +54,24 @@ export default function DynamicTableWithNotification({
     message: "",
   });
 
-  // Calculate total pages based on rowData length
-  const totalPages = Math.max(1, Math.ceil(rowData.length / pageSize));
+  // Delete confirmation state
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    rowToDelete: any;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    rowToDelete: null,
+    isDeleting: false,
+  });
+
+  // Update local data when rowData prop changes
+  useEffect(() => {
+    setLocalRowData(rowData);
+  }, [rowData]);
+
+  // Calculate total pages based on localRowData length
+  const totalPages = Math.max(1, Math.ceil(localRowData.length / pageSize));
 
   // Empty default columns - will use provided columns instead
 
@@ -84,11 +107,43 @@ export default function DynamicTableWithNotification({
     ),
   };
 
-  // Add notification column to columns - ensuring columns are provided
-  const tableColumns = [...columns, notificationColumn];
+  // Add delete action column
+  const deleteColumn: Column = {
+    key: "delete",
+    header: "Delete",
+    render: (row) => (
+      <button
+        onClick={(e) => {
+          // Stop event propagation to prevent triggering onRowClick
+          e.stopPropagation();
+          openDeleteConfirmation(row);
+        }}
+        className="p-2 text-red-600 rounded-full hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors duration-200"
+        title="Delete Row"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+          />
+        </svg>
+      </button>
+    ),
+  };
+
+  // Add notification and delete columns to columns - ensuring columns are provided
+  const tableColumns = [...columns, notificationColumn, deleteColumn];
 
   // Calculate data to display based on current page
-  const displayData = rowData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const displayData = localRowData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
@@ -105,6 +160,111 @@ export default function DynamicTableWithNotification({
   const openNotifyAllForm = () => {
     setIsNotifyAllFormOpen(true);
   };
+
+  // Open delete confirmation dialog
+  const openDeleteConfirmation = (row: any) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      rowToDelete: row,
+    });
+  };
+
+  // Close delete confirmation dialog
+  const closeDeleteConfirmation = () => {
+    if (!deleteConfirmation.isDeleting) {
+      setDeleteConfirmation({
+        isOpen: false,
+        rowToDelete: null,
+        isDeleting: false,
+      });
+    }
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirmation.rowToDelete && !deleteConfirmation.isDeleting) {
+      try {
+        // Set deleting state to prevent multiple clicks
+        setDeleteConfirmation(prev => ({ ...prev, isDeleting: true }));
+
+        // Call the delete function from props
+        await deleteUserCredentials(deleteConfirmation.rowToDelete.user.id)
+        await deleteRow(deleteConfirmation.rowToDelete.id);
+
+        // Remove the row from local state immediately for optimistic update
+        const deletedRow = deleteConfirmation.rowToDelete;
+        setLocalRowData(prevData =>
+          prevData.filter(row =>
+            row.id ? row.id !== deletedRow.id : row !== deletedRow
+          )
+        );
+
+        // Adjust current page if necessary
+        const newTotalPages = Math.max(1, Math.ceil((localRowData.length - 1) / pageSize));
+        if (currentPage > newTotalPages) {
+          setCurrentPage(Math.max(1, newTotalPages));
+        }
+
+        // Call the callback to notify parent
+        onRowDeleted(deletedRow);
+
+        // Show success message
+        setNotificationStatus({
+          show: true,
+          success: true,
+          message: "Row deleted successfully!",
+        });
+
+        // Hide the status message after 3 seconds
+        setTimeout(() => {
+          setNotificationStatus((prev) => ({ ...prev, show: false }));
+        }, 3000);
+
+      } catch (error) {
+        console.error('Error deleting row:', error);
+
+        // Show error message
+        setNotificationStatus({
+          show: true,
+          success: false,
+          message: "Failed to delete row. Please try again.",
+        });
+
+        // Hide the status message after 3 seconds
+        setTimeout(() => {
+          setNotificationStatus((prev) => ({ ...prev, show: false }));
+        }, 3000);
+      } finally {
+        // Close the confirmation dialog
+        setDeleteConfirmation({
+          isOpen: false,
+          rowToDelete: null,
+          isDeleting: false,
+        });
+      }
+    }
+  };
+
+  const deleteUserCredentials = async (userId: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.log('There is not token to process request')
+        // navigate('/')
+        return
+      }
+      await deleteUser(
+        token,
+        userId,
+        (data) => {
+          console.log('User deleted successfully', data)
+        },
+        (error) => console.log('Something went wrong', error)
+      )
+    } catch (e) {
+      console.log(e)
+    }
+  }
 
   // Handle notification form submission for single recipient
   const handleNotificationSubmit = async (title: string, message: string) => {
@@ -140,8 +300,6 @@ export default function DynamicTableWithNotification({
       }
     )
   };
-
-
 
   // Handle notification form submission for all recipients
   const handleNotifyAllSubmit = async (title: string, message: string) => {
@@ -325,7 +483,7 @@ export default function DynamicTableWithNotification({
 
             {/* Dynamic Table Body */}
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-              {rowData.length === 0 ? (
+              {localRowData.length === 0 ? (
                 <TableRow>
                   <TableCell
                     // colSpan={tableColumns.length}
@@ -360,9 +518,92 @@ export default function DynamicTableWithNotification({
       </div>
 
       {/* Pagination */}
-      {rowData.length > pageSize && (
+      {localRowData.length > pageSize && (
         <div className="flex justify-center mt-4 py-4">
           {renderPagination()}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmation.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70"
+            onClick={closeDeleteConfirmation}
+          ></div>
+
+          {/* Modal */}
+          <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mx-4 max-w-md w-full">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6 text-red-600 dark:text-red-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white text-center mb-2">
+              Confirm Delete
+            </h3>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
+              Are you sure you want to delete this row? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={closeDeleteConfirmation}
+                disabled={deleteConfirmation.isDeleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleteConfirmation.isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2"
+              >
+                {deleteConfirmation.isDeleting ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Deleting...
+                  </>
+                ) : (
+                  'Confirm'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
