@@ -2,63 +2,99 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getAllTeachers, deleteTeacher } from "../../api/Teachers";
 import { useNavigate } from "react-router";
 
 export default function TeacherTables() {
     const navigate = useNavigate();
     const [tableData, setTableData] = useState([]);
-
-
+    const [currentPage, setCurrentPage] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const pageSize = 10;
 
     const handleTeacherDelete = async (teacherId: string) => {
         try {
-            const token = localStorage.getItem('token')
+            const token = localStorage.getItem('token');
             if (!token) {
-                console.log('There is not token to process request')
-                navigate('/')
-                return
+                console.log('There is not token to process request');
+                navigate('/');
+                return;
             }
             await deleteTeacher(
                 token,
                 teacherId,
                 (data) => {
-                    console.log('Student delted successfully', data)
-                    // deleteStudentCredentials()
+                    console.log('Teacher deleted successfully', data);
                 },
                 (error) => console.log('Something went wrong while deleting', error)
-            )
-
+            );
         } catch (e) {
-            console.log(e)
+            console.log(e);
         }
-    }
+    };
 
-    useEffect(() => {
+    const loadTeachers = useCallback(async (page: number = 0, append: boolean = false) => {
         const token = localStorage.getItem("token");
-
         if (!token) {
             navigate("/signin");
             return;
         }
 
-        getAllTeachers(
-            0,
-            10,
-            token,
-            (data) => {
-                console.log("data", data);
-                setTableData(data);
-            },
-            () => {
-                console.log("error");
-            }
-        );
-    }, []);
+        setIsLoading(true);
+
+        try {
+            await new Promise<void>((resolve, reject) => {
+                getAllTeachers(
+                    page,
+                    pageSize,
+                    token,
+                    (data) => {
+                        console.log("data", data);
+
+                        if (append) {
+                            setTableData(prevData => [...prevData, ...data]);
+                        } else {
+                            setTableData(data);
+                        }
+
+                        setHasMore(data.length === pageSize);
+                        setCurrentPage(page);
+                        resolve();
+                    },
+                    (error) => {
+                        console.log("error", error);
+                        reject(error);
+                    }
+                );
+            });
+        } catch (error) {
+            console.error("Failed to load teachers:", error);
+            setHasMore(false);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [navigate, pageSize]);
+
+    const handleLoadMore = useCallback(async () => {
+        if (!isLoading && hasMore) {
+            await loadTeachers(currentPage + 1, true);
+        }
+    }, [currentPage, isLoading, hasMore, loadTeachers]);
+
+    useEffect(() => {
+        loadTeachers(0, false);
+    }, [loadTeachers]);
 
     const handleRowClick = (row: any) => {
         navigate("/teacher_form", { state: row });
+    };
+
+    const handleRowDeleted = (deletedRow: any) => { // optimized update
+        setTableData(prevData =>
+            prevData.filter(teacher => teacher.id !== deletedRow.id)
+        );
     };
 
     return (
@@ -70,7 +106,6 @@ export default function TeacherTables() {
             <PageBreadcrumb pageTitle="Teachers" />
 
             <div className="space-y-6">
-                {/* Header and Create Button */}
                 <div className="flex justify-between items-center mb-4">
                     <button
                         onClick={() => navigate("/teacher_form")}
@@ -81,7 +116,6 @@ export default function TeacherTables() {
                     </button>
                 </div>
 
-                {/* Teachers Table */}
                 <ComponentCard title="Teachers data">
                     <BasicTableOne
                         rowData={tableData}
@@ -94,6 +128,11 @@ export default function TeacherTables() {
                         ]}
                         onRowClick={handleRowClick}
                         deleteRow={handleTeacherDelete}
+                        onRowDeleted={handleRowDeleted}
+                        hasMore={hasMore}
+                        isLoading={isLoading}
+                        onLoadMore={handleLoadMore}
+                        initialDisplayCount={10}
                     />
                 </ComponentCard>
             </div>

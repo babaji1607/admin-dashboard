@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import YouTube from 'react-youtube';
 import { GLOBAL_URL } from "../../utils";
+import { Trash2, Upload, RefreshCw, AlertCircle } from "lucide-react";
 
 // ✅ Mock Alert component – replace with actual
 interface AlertProps {
@@ -28,6 +29,38 @@ interface GalleryItem {
     videoUrl: string | null;
     date: string;
 }
+
+// ✅ Confirmation Modal component
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+                <div className="flex items-center">
+                    <AlertCircle className="text-red-500 mr-4" size={24} />
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-white">{title}</h3>
+                </div>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">{message}</p>
+                <div className="mt-6 flex justify-end gap-4">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // ✅ Extract YouTube video ID from URL
 const getYouTubeVideoId = (url: string): string | null => {
@@ -116,6 +149,9 @@ const GalleryList = () => {
     const [videoUrl, setVideoUrl] = useState("");
     const [file, setFile] = useState<File | null>(null);
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
     const ITEMS_PER_PAGE = 10;
 
     // ✅ YouTube player options
@@ -173,16 +209,26 @@ const GalleryList = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this item?")) return;
+    const handleDelete = (id: string) => {
+        setItemToDelete(id);
+        setIsModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!itemToDelete) return;
+
         try {
-            await deleteGalleryItem(id, token);
-            setGallery((prev) => prev.filter((item) => item.id !== id));
+            await deleteGalleryItem(itemToDelete, token);
+            setGallery((prev) => prev.filter((item) => item.id !== itemToDelete));
             showAlert("success", "Item deleted successfully.");
         } catch (err: any) {
             showAlert("error", err.message || "Failed to delete item.");
+        } finally {
+            setIsModalOpen(false);
+            setItemToDelete(null);
         }
     };
+
 
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -271,9 +317,10 @@ const GalleryList = () => {
                             setHasMore(true);
                             fetchGallery();
                         }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
                         disabled={loading}
                     >
+                        <RefreshCw size={18} className="mr-2" />
                         Refresh
                     </button>
                 </div>
@@ -304,8 +351,9 @@ const GalleryList = () => {
                     <div className="flex items-end">
                         <button
                             type="submit"
-                            className="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                            className="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center"
                         >
+                            <Upload size={18} className="mr-2" />
                             Upload
                         </button>
                     </div>
@@ -363,7 +411,10 @@ const GalleryList = () => {
                                     )}
                                     <div className="p-4">
                                         <p className="text-sm text-gray-600 dark:text-gray-300">{new Date(item.date).toLocaleString()}</p>
-                                        <button onClick={() => handleDelete(item.id)} className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline">Delete</button>
+                                        <button onClick={() => handleDelete(item.id)} className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline flex items-center">
+                                            <Trash2 size={16} className="mr-1" />
+                                            Delete
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -380,6 +431,13 @@ const GalleryList = () => {
                     </>
                 )}
             </div>
+            <ConfirmationModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Confirm Deletion"
+                message="Are you sure you want to delete this item? This action cannot be undone."
+            />
         </div>
     );
 };

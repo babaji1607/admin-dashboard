@@ -133,3 +133,45 @@ export const sendSingleNotification = async (
         onError(error)
     }
 }
+
+export const deleteNotification = async (
+    token: string,
+    notificationId: string,
+    onSuccess: (response: { message: string; status: number }) => void,
+    onError: (error: {
+        status: number | null;
+        message: string;
+        data?: any;
+        error?: unknown;
+    }) => void
+): Promise<void> => {
+    try {
+        const response = await fetch(`${GLOBAL_URL}/notifications/${notificationId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'accept': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            onSuccess({
+                message: 'Notification deleted successfully',
+                status: response.status
+            });
+        } else {
+            const data = await response.json();
+            onError({
+                status: response.status,
+                message: data?.detail || 'Failed to delete notification',
+                data
+            });
+        }
+    } catch (error) {
+        onError({
+            status: null,
+            message: error instanceof Error ? error.message : 'Network error',
+            error
+        });
+    }
+};

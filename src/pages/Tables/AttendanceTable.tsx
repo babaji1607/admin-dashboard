@@ -4,11 +4,30 @@ import PageMeta from "../../components/common/PageMeta";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
-import { getAttendanceSessions } from "../../api/Attendance";
+import { getAttendanceSessions, deleteAttendanceSession } from "../../api/Attendance";
 
 export default function AttendanceTable() {
     const navigate = useNavigate();
     const [tableData, setTableData] = useState([]);
+
+    const deleteAttendanceSessionRow = async (sessionId: string) => {
+        try {
+            const token = localStorage.getItem('token')
+            if (!token) {
+                console.log('Token is not available or invalid')
+                return
+            }
+            await deleteAttendanceSession(
+                token,
+                sessionId,
+                () => console.log('attendance session delted successfully'),
+                (error) => console.log('Failed to delete attendance sessions', error)
+            )
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -47,6 +66,7 @@ export default function AttendanceTable() {
                     <BasicTableTwo
                         rowData={tableData}
                         navigationPath="/attendance-detail"
+                        deleteRow={deleteAttendanceSessionRow}
                         columns={[
                             {
                                 key: "id",

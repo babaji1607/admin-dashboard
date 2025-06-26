@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -17,28 +17,39 @@ interface Column {
 }
 
 interface DynamicTableProps {
-  columns: Column[];  // Columns are required, not optional
-  rowData: any[];     // Array of objects with keys matching column keys
-  pageSize?: number;
-  onRowClick?: (row: any) => void; // Made onRowClick optional with proper typing
-  notificationChannel: string; // Made onRowClick optional with proper typing
-  deleteRow?: (row: any) => Promise<void> | void; // Delete function from props - can be async
-  onRowDeleted?: (deletedRow: any) => void; // Callback after successful deletion
+  columns: Column[];
+  rowData: any[];
+  onRowClick?: (row: any) => void;
+  notificationChannel: string;
+  deleteRow?: (row: any) => Promise<void> | void;
+  onRowDeleted?: (deletedRow: any) => void;
+  // New props for infinite scroll
+  hasMore?: boolean;
+  isLoading?: boolean;
+  onLoadMore?: () => Promise<void> | void;
+  initialDisplayCount?: number;
 }
 
 export default function DynamicTableWithNotification({
   columns,
-  pageSize = 5,
   rowData,
   notificationChannel,
   onRowClick = () => { },
-  deleteRow = () => { }, // Default empty function
-  onRowDeleted = () => { } // Default empty function
+  deleteRow = () => { },
+  onRowDeleted = () => { },
+  hasMore = false,
+  isLoading = false,
+  onLoadMore = () => { },
+  initialDisplayCount = 10
 }: DynamicTableProps) {
-  // Keep only essential state
-  const [currentPage, setCurrentPage] = useState<number>(1);
   // Local state for managing row data with deletions
   const [localRowData, setLocalRowData] = useState<any[]>(rowData);
+  // Track how many items to display for infinite scroll
+  const [displayCount, setDisplayCount] = useState<number>(initialDisplayCount);
+
+  // Refs for infinite scroll
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef<HTMLDivElement>(null);
 
   // Notification form state
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
@@ -70,10 +81,48 @@ export default function DynamicTableWithNotification({
     setLocalRowData(rowData);
   }, [rowData]);
 
-  // Calculate total pages based on localRowData length
-  const totalPages = Math.max(1, Math.ceil(localRowData.length / pageSize));
+  // Infinite scroll logic
+  const loadMoreItems = useCallback(async () => {
+    if (isLoading) return;
 
-  // Empty default columns - will use provided columns instead
+    // If we have more data locally, show more items
+    if (displayCount < localRowData.length) {
+      setDisplayCount(prev => Math.min(prev + initialDisplayCount, localRowData.length));
+      return;
+    }
+
+    // If we need to load more data from server
+    if (hasMore && onLoadMore) {
+      await onLoadMore();
+    }
+  }, [displayCount, localRowData.length, hasMore, isLoading, onLoadMore, initialDisplayCount]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && (displayCount < localRowData.length || hasMore)) {
+          loadMoreItems();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px',
+      }
+    );
+
+    const currentLoadingRef = loadingRef.current;
+    if (currentLoadingRef) {
+      observer.observe(currentLoadingRef);
+    }
+
+    return () => {
+      if (currentLoadingRef) {
+        observer.unobserve(currentLoadingRef);
+      }
+    };
+  }, [loadMoreItems, displayCount, localRowData.length, hasMore]);
 
   // Add notification action column
   const notificationColumn: Column = {
@@ -82,7 +131,6 @@ export default function DynamicTableWithNotification({
     render: (row) => (
       <button
         onClick={(e) => {
-          // Stop event propagation to prevent triggering onRowClick
           e.stopPropagation();
           openNotificationForm(row);
         }}
@@ -114,7 +162,6 @@ export default function DynamicTableWithNotification({
     render: (row) => (
       <button
         onClick={(e) => {
-          // Stop event propagation to prevent triggering onRowClick
           e.stopPropagation();
           openDeleteConfirmation(row);
         }}
@@ -139,16 +186,11 @@ export default function DynamicTableWithNotification({
     ),
   };
 
-  // Add notification and delete columns to columns - ensuring columns are provided
+  // Add notification and delete columns to columns
   const tableColumns = [...columns, notificationColumn, deleteColumn];
 
-  // Calculate data to display based on current page
-  const displayData = localRowData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
-  // Handle page change
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-  };
+  // Calculate data to display based on displayCount
+  const displayData = localRowData.slice(0, displayCount);
 
   // Open notification form for a single recipient
   const openNotificationForm = (recipient: any) => {
@@ -185,14 +227,11 @@ export default function DynamicTableWithNotification({
   const handleDeleteConfirm = async () => {
     if (deleteConfirmation.rowToDelete && !deleteConfirmation.isDeleting) {
       try {
-        // Set deleting state to prevent multiple clicks
         setDeleteConfirmation(prev => ({ ...prev, isDeleting: true }));
 
-        // Call the delete function from props
         await deleteUserCredentials(deleteConfirmation.rowToDelete.user.id)
         await deleteRow(deleteConfirmation.rowToDelete.id);
 
-        // Remove the row from local state immediately for optimistic update
         const deletedRow = deleteConfirmation.rowToDelete;
         setLocalRowData(prevData =>
           prevData.filter(row =>
@@ -200,23 +239,14 @@ export default function DynamicTableWithNotification({
           )
         );
 
-        // Adjust current page if necessary
-        const newTotalPages = Math.max(1, Math.ceil((localRowData.length - 1) / pageSize));
-        if (currentPage > newTotalPages) {
-          setCurrentPage(Math.max(1, newTotalPages));
-        }
-
-        // Call the callback to notify parent
         onRowDeleted(deletedRow);
 
-        // Show success message
         setNotificationStatus({
           show: true,
           success: true,
           message: "Row deleted successfully!",
         });
 
-        // Hide the status message after 3 seconds
         setTimeout(() => {
           setNotificationStatus((prev) => ({ ...prev, show: false }));
         }, 3000);
@@ -224,19 +254,16 @@ export default function DynamicTableWithNotification({
       } catch (error) {
         console.error('Error deleting row:', error);
 
-        // Show error message
         setNotificationStatus({
           show: true,
           success: false,
           message: "Failed to delete row. Please try again.",
         });
 
-        // Hide the status message after 3 seconds
         setTimeout(() => {
           setNotificationStatus((prev) => ({ ...prev, show: false }));
         }, 3000);
       } finally {
-        // Close the confirmation dialog
         setDeleteConfirmation({
           isOpen: false,
           rowToDelete: null,
@@ -251,7 +278,6 @@ export default function DynamicTableWithNotification({
       const token = localStorage.getItem('token')
       if (!token) {
         console.log('There is not token to process request')
-        // navigate('/')
         return
       }
       await deleteUser(
@@ -269,9 +295,7 @@ export default function DynamicTableWithNotification({
 
   // Handle notification form submission for single recipient
   const handleNotificationSubmit = async (title: string, message: string) => {
-    // alert(`Notification sent to ${selectedRecipient}\nTitle: ${title}\nMessage: ${message}`);
     console.log(selectedRecipient?.notification_token)
-    // this is very important cuz otherwise it will be sent to all students
     if (!selectedRecipient?.notification_token) {
       alert('You cant send this student notification cuz maybe he is not logged in')
       return
@@ -280,18 +304,16 @@ export default function DynamicTableWithNotification({
     await sendSingleNotification(
       title,
       message,
-      notificationChannel, // this is recipient_type as channel name
+      notificationChannel,
       selectedRecipient?.id,
       selectedRecipient?.notification_token,
       (data) => {
         console.log(data)
-        // Show success message
         setNotificationStatus({
           show: true,
           success: true,
           message: `Notification sent to ${selectedRecipient} successfully!`,
         });
-        // Hide the status message after 3 seconds
         setTimeout(() => {
           setNotificationStatus((prev) => ({ ...prev, show: false }));
         }, 3000);
@@ -304,21 +326,17 @@ export default function DynamicTableWithNotification({
 
   // Handle notification form submission for all recipients
   const handleNotifyAllSubmit = async (title: string, message: string) => {
-    // alert(`Notification sent to all students\nTitle: ${title}\nMessage: ${message}`);
-
     await sendMassNotification(
       title,
       message,
       notificationChannel,
       (data) => {
-        // Show success message
         console.log(data)
         setNotificationStatus({
           show: true,
           success: true,
           message: `Notification sent to all students successfully!`,
         });
-        // Hide the status message after 3 seconds
         setTimeout(() => {
           setNotificationStatus((prev) => ({ ...prev, show: false }));
         }, 3000);
@@ -329,102 +347,8 @@ export default function DynamicTableWithNotification({
     )
   };
 
-  // Generate pagination buttons
-  const renderPagination = () => {
-    const pages = [];
-
-    // Add previous button
-    pages.push(
-      <button
-        key="prev"
-        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
-        className={`px-3 py-1 mx-1 rounded ${currentPage === 1
-          ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400"
-          : "bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-          }`}
-      >
-        Previous
-      </button>
-    );
-
-    // Show first page button
-    if (currentPage > 2) {
-      pages.push(
-        <button
-          key={1}
-          onClick={() => handlePageChange(1)}
-          className="px-3 py-1 mx-1 rounded bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          1
-        </button>
-      );
-    }
-
-    // Show ellipsis if needed
-    if (currentPage > 3) {
-      pages.push(
-        <span key="ellipsis1" className="px-3 py-1 mx-1">
-          ...
-        </span>
-      );
-    }
-
-    // Page numbers
-    for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={() => handlePageChange(i)}
-          className={`px-3 py-1 mx-1 rounded ${i === currentPage
-            ? "bg-blue-500 text-white dark:bg-blue-600"
-            : "bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            }`}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    // Show ellipsis if needed
-    if (currentPage < totalPages - 2) {
-      pages.push(
-        <span key="ellipsis2" className="px-3 py-1 mx-1">
-          ...
-        </span>
-      );
-    }
-
-    // Show last page button
-    if (currentPage < totalPages - 1 && totalPages > 1) {
-      pages.push(
-        <button
-          key={totalPages}
-          onClick={() => handlePageChange(totalPages)}
-          className="px-3 py-1 mx-1 rounded bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          {totalPages}
-        </button>
-      );
-    }
-
-    // Add next button
-    pages.push(
-      <button
-        key="next"
-        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
-        className={`px-3 py-1 mx-1 rounded ${currentPage === totalPages
-          ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400"
-          : "bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-          }`}
-      >
-        Next
-      </button>
-    );
-
-    return pages;
-  };
+  const showLoadingIndicator = displayCount < localRowData.length || (hasMore && !isLoading);
+  const showSpinner = isLoading;
 
   return (
     <div className="flex flex-col">
@@ -464,7 +388,10 @@ export default function DynamicTableWithNotification({
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+      <div
+        ref={tableContainerRef}
+        className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]"
+      >
         <div className="max-w-full overflow-x-auto">
           <Table>
             {/* Dynamic Table Header */}
@@ -487,7 +414,6 @@ export default function DynamicTableWithNotification({
               {localRowData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    // colSpan={tableColumns.length}
                     className="px-5 py-4 text-center text-gray-500 dark:text-gray-400"
                   >
                     No data available
@@ -516,25 +442,54 @@ export default function DynamicTableWithNotification({
             </TableBody>
           </Table>
         </div>
-      </div>
 
-      {/* Pagination */}
-      {localRowData.length > pageSize && (
-        <div className="flex justify-center mt-4 py-4">
-          {renderPagination()}
-        </div>
-      )}
+        {/* Loading indicator for infinite scroll */}
+        {(showLoadingIndicator || showSpinner) && (
+          <div
+            ref={loadingRef}
+            className="flex justify-center items-center py-4 border-t border-gray-100 dark:border-white/[0.05]"
+          >
+            {showSpinner ? (
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                <svg
+                  className="animate-spin h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span>Loading more...</span>
+              </div>
+            ) : (
+              <div className="text-gray-400 dark:text-gray-500 text-sm">
+                Scroll to load more
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmation.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70"
             onClick={closeDeleteConfirmation}
           ></div>
 
-          {/* Modal */}
           <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mx-4 max-w-md w-full">
             <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full">
               <svg

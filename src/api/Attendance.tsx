@@ -149,3 +149,106 @@ export const getAttendanceSessionsWithOptions = async (
         return {};
     }
 };
+
+
+export const deleteAttendanceSession = async (
+    token: string,
+    sessionId: string,
+    onSuccess: (response: { message: string; status: number }) => void,
+    onError: (error: {
+        status: number | null;
+        message: string;
+        data?: any;
+        error?: unknown;
+    }) => void
+): Promise<void> => {
+    try {
+        const response = await fetch(`${GLOBAL_URL}/attendance/session/${sessionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'accept': '*/*'
+            }
+        });
+
+        if (response.ok) {
+            onSuccess({
+                message: 'Attendance session deleted successfully',
+                status: response.status
+            });
+        } else {
+            const data = await response.json();
+            onError({
+                status: response.status,
+                message: data?.detail || 'Failed to delete attendance session',
+                data
+            });
+        }
+    } catch (error) {
+        onError({
+            status: null,
+            message: error instanceof Error ? error.message : 'Network error',
+            error
+        });
+    }
+};
+
+
+
+export const updateAttendanceSession = async (
+    token: string,
+    sessionId: string,
+    payload: {
+        date: string;
+        teacher_id: string;
+        subject: string;
+        class_name: string;
+        id: string;
+        records: {
+            student_id: string;
+            status: string;
+            student_name: string;
+            id: string;
+            session_id: string;
+        }[];
+    },
+    onSuccess: (response: { message: string; status: number }) => void,
+    onError: (error: {
+        status: number | null;
+        message: string;
+        data?: any;
+        error?: unknown;
+    }) => void
+): Promise<void> => {
+    try {
+        const response = await fetch(`${GLOBAL_URL}/attendance/session/${sessionId}/`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            onSuccess({
+                message: 'Attendance session updated successfully',
+                status: response.status
+            });
+        } else {
+            const data = await response.json();
+            onError({
+                status: response.status,
+                message: data?.detail || 'Failed to update attendance session',
+                data
+            });
+        }
+    } catch (error) {
+        onError({
+            status: null,
+            message: error instanceof Error ? error.message : 'Network error',
+            error
+        });
+    }
+};

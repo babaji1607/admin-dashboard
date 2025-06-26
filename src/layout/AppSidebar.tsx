@@ -1,20 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
-// Assume these icons are imported from an icon library
+// Lucide React icons
 import {
-  BoxCubeIcon,
-  CalenderIcon,
-  ChevronDownIcon,
-  // GridIcon,
-  HorizontaLDots,
-  ListIcon,
-  PieChartIcon,
-  PlugInIcon,
-  TableIcon,
-} from "../icons";
+  GraduationCap,
+  Users,
+  UserCheck,
+  Receipt,
+  ClipboardList,
+  Bell,
+  Calendar,
+  Image,
+  ChevronDown,
+  MoreHorizontal,
+  PieChart,
+  Box,
+  Plug,
+  LogIn,
+  UserPlus,
+  BarChart3,
+  LineChart,
+  AlertTriangle,
+  User,
+  Award,
+  MousePointer,
+  ImageIcon,
+  Video
+} from "lucide-react";
+
 import { useSidebar } from "../context/SidebarContext";
-// import SidebarWidget from "./SidebarWidget";
 
 type NavItem = {
   name: string;
@@ -24,79 +38,51 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  // {
-  //   icon: <GridIcon />,
-  //   name: "Dashboard",
-  //   subItems: [{ name: "Ecommerce", path: "/", pro: false }],
-  // },
-  // {
-  //   icon: <GridIcon />,
-  //   name: "Dashboard",
-  //   path: "/",
-  // },
   {
-    icon: <TableIcon />,
+    icon: <GraduationCap size={20} />,
     name: "Classes",
     path: "/",
   },
   {
-    icon: <TableIcon />,
+    icon: <Users size={20} />,
     name: "Students",
     path: "/student-tables",
   },
   {
-    icon: <TableIcon />,
+    icon: <UserCheck size={20} />,
     name: "Teachers",
     path: "/teacher-tables",
   },
   {
-    icon: <ListIcon />,
+    icon: <Receipt size={20} />,
     name: "Fee Receipts",
     path: "/fee-receipts",
   },
   {
-    icon: <TableIcon />,
+    icon: <ClipboardList size={20} />,
     name: "Attendance",
     path: "/attendance",
   },
   {
-    icon: <ListIcon />,
-    name: "Notifications History", // here you can revoke the notificaitons
+    icon: <Bell size={20} />,
+    name: "Notifications History",
     path: "/notification-history",
   },
   {
-    icon: <CalenderIcon />,
+    icon: <Calendar size={20} />,
     name: "Calendar",
     path: "/calendar",
   },
   {
-    icon: <CalenderIcon />,
+    icon: <Image size={20} />,
     name: "Gallery",
     path: "/school_gallery",
   },
-  // {
-  //   name: "Forms",
-  //   icon: <ListIcon />,
-  //   subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  // },
-  // {
-  //   name: "Tables",
-  //   icon: <TableIcon />,
-  //   subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  // },
-  // {
-  //   name: "Pages",
-  //   icon: <PageIcon />,
-  //   subItems: [
-  //     { name: "Blank Page", path: "/blank", pro: false },
-  //     { name: "404 Error", path: "/error-404", pro: false },
-  //   ],
-  // },
 ];
 
 const othersItems: NavItem[] = [
   {
-    icon: <PieChartIcon />,
+    icon: <PieChart size={20} />,
     name: "Charts",
     subItems: [
       { name: "Line Chart", path: "/line-chart", pro: false },
@@ -104,7 +90,7 @@ const othersItems: NavItem[] = [
     ],
   },
   {
-    icon: <BoxCubeIcon />,
+    icon: <Box size={20} />,
     name: "UI Elements",
     subItems: [
       { name: "Alerts", path: "/alerts", pro: false },
@@ -116,7 +102,7 @@ const othersItems: NavItem[] = [
     ],
   },
   {
-    icon: <PlugInIcon />,
+    icon: <Plug size={20} />,
     name: "Authentication",
     subItems: [
       { name: "Sign In", path: "/signin", pro: false },
@@ -138,7 +124,6 @@ const AppSidebar: React.FC = () => {
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
     (path: string) => location.pathname === path,
     [location.pathname]
@@ -220,8 +205,9 @@ const AppSidebar: React.FC = () => {
                 <span className="menu-item-text">{nav.name}</span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
-                <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${openSubmenu?.type === menuType &&
+                <ChevronDown
+                  size={20}
+                  className={`ml-auto transition-transform duration-200 ${openSubmenu?.type === menuType &&
                     openSubmenu?.index === index
                     ? "rotate-180 text-brand-500"
                     : ""
@@ -328,31 +314,12 @@ const AppSidebar: React.FC = () => {
         <Link to="/">
           {isExpanded || isHovered || isMobileOpen ? (
             <>
-              {/* <img
-                className="dark:hidden"
-                src="/images/logo/logo.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-              <img
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              /> */}
               <h1 className="dark:text-white text-blue-700 text-3xl">
                 First Step School
               </h1>
             </>
           ) : (
-            <img
-              src="/images/logo/logo-icon.svg"
-              alt="Logo"
-              width={32}
-              height={32}
-            />
+            <GraduationCap size={32} className="text-blue-700 dark:text-blue-400" />
           )}
         </Link>
       </div>
@@ -369,11 +336,12 @@ const AppSidebar: React.FC = () => {
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Menu"
                 ) : (
-                  <HorizontaLDots className="size-6" />
+                  <MoreHorizontal size={24} />
                 )}
               </h2>
               {renderMenuItems(navItems, "main")}
             </div>
+            {/* Uncomment if you want to show others section */}
             {/* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
@@ -385,14 +353,13 @@ const AppSidebar: React.FC = () => {
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Others"
                 ) : (
-                  <HorizontaLDots />
+                  <MoreHorizontal size={24} />
                 )}
               </h2>
               {renderMenuItems(othersItems, "others")}
             </div> */}
           </div>
         </nav>
-        {/* {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null} */}
       </div>
     </aside>
   );
