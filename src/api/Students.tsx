@@ -16,8 +16,8 @@ export const getAllStudents = async (
     offset: number,
     limit: number,
     token: string,
-    onSuccess: (data: any) => void = () => {},
-    onError: () => void = () => {}
+    onSuccess: (data: any) => void = () => { },
+    onError: () => void = () => { }
 ): Promise<ApiResponse> => {
     try {
         const url = `${GLOBAL_URL}/students/showall?offset=${offset}&limit=${limit}`;
@@ -142,9 +142,9 @@ export const deleteStudent = async (
         });
 
         if (response.ok) {
-            onSuccess({ 
-                message: 'Student deleted successfully', 
-                status: response.status 
+            onSuccess({
+                message: 'Student deleted successfully',
+                status: response.status
             });
         } else {
             const data = await response.json();
@@ -162,3 +162,60 @@ export const deleteStudent = async (
         });
     }
 };
+
+
+
+/**
+ * Search students by term using FastAPI endpoint.
+ *
+ * @param {string} searchTerm - The search term to query.
+ * @returns {Promise<Array>} - Resolves to array of students.
+ * @throws {Error} - Throws if request fails or no token is found.
+ */
+export async function searchStudents(searchTerm: string) {
+    // Get token from localStorage
+    const token = localStorage.getItem("token");
+    if (!token) {
+        throw new Error("Authorization token not found. Please log in.");
+    }
+
+    // Validate input
+    if (!searchTerm || typeof searchTerm !== "string") {
+        throw new Error("Search term must be a non-empty string.");
+    }
+
+    // Build URL
+    const url = `${GLOBAL_URL}/students/search/by-term/?query=${encodeURIComponent(searchTerm)}`;
+
+    try {
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            // Try to parse error details from server
+            let errorDetails = "";
+            try {
+                const errorData = await response.json();
+                errorDetails = errorData.detail || JSON.stringify(errorData);
+            } catch {
+                errorDetails = response.statusText;
+            }
+
+            throw new Error(`Error ${response.status}: ${errorDetails}`);
+        }
+
+        // Parse and return JSON
+        const data = await response.json();
+        console.log("Students fetched", data)
+        return data;
+
+    } catch (error) {
+        console.error("Failed to fetch students:", error);
+        throw new Error(`Failed to fetch students: ${error.message}`);
+    }
+}
