@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Table,
@@ -17,21 +17,28 @@ interface Column {
 interface BasicTableTwoProps {
   columns: Column[];
   rowData: any[];
-  pageSize?: number;
   navigationPath?: string;
   onRowClick?: (rowData: any) => void;
-  deleteRow?: (id: any) => void; // New prop for delete function
+  deleteRow?: (id: any) => void;
+  // New props for infinite scrolling
+  loadMoreData?: () => Promise<void>;
+  hasMore?: boolean;
+  isLoading?: boolean;
+  // Old pagination props (optional for backward compatibility)
+  pageSize?: number;
 }
 
 export default function BasicTableTwo({
   columns,
   rowData,
-  pageSize = 5,
   navigationPath = '#',
   onRowClick,
-  deleteRow, // New prop
+  deleteRow,
+  loadMoreData,
+  hasMore = false,
+  isLoading = false,
+  pageSize, // Keep for backward compatibility
 }: BasicTableTwoProps) {
-  const [currentPage, setCurrentPage] = useState<number>(1);
   const [localRowData, setLocalRowData] = useState(rowData);
   const [deletePrompt, setDeletePrompt] = useState<{
     isOpen: boolean;
@@ -42,27 +49,49 @@ export default function BasicTableTwo({
     rowData: null,
     rowIndex: -1,
   });
+  const [isThrottled, setIsThrottled] = useState(false);
   const navigate = useNavigate();
+
+  // Determine if we're using infinite scroll or pagination
+  const useInfiniteScroll = !!loadMoreData;
 
   // Update local data when props change
   useEffect(() => {
     setLocalRowData(rowData);
   }, [rowData]);
 
-  const totalPages = Math.max(1, Math.ceil(localRowData.length / pageSize));
+  // Throttled scroll handler for window scroll
+  const handleScroll = useCallback(() => {
+    if (!loadMoreData || !hasMore || isLoading || isThrottled) return;
 
-  const displayData = localRowData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+    const scrollThreshold = 200; // Load more when 200px from bottom
 
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-  };
+    if (documentHeight - scrollTop - windowHeight < scrollThreshold) {
+      setIsThrottled(true);
+      loadMoreData().finally(() => {
+        // Reset throttle after a delay
+        setTimeout(() => {
+          setIsThrottled(false);
+        }, 500);
+      });
+    }
+  }, [loadMoreData, hasMore, isLoading, isThrottled]);
+
+
 
   const handleRowClick = (rowData: any) => {
-    navigate(navigationPath, { state: { rowData } });
+    if (onRowClick) {
+      onRowClick(rowData);
+    } else {
+      navigate(navigationPath, { state: { rowData } });
+    }
   };
 
   const handleDeleteClick = (e: React.MouseEvent, row: any, rowIndex: number) => {
-    e.stopPropagation(); // Prevent row click
+    e.stopPropagation();
     setDeletePrompt({
       isOpen: true,
       rowData: row,
@@ -72,26 +101,16 @@ export default function BasicTableTwo({
 
   const handleConfirm = async () => {
     if (deleteRow) {
-      // Optimistically update the UI first
       const updatedData = localRowData.filter(row => row.id !== deletePrompt.rowData.id);
       setLocalRowData(updatedData);
 
-      // Adjust current page if necessary
-      const newTotalPages = Math.max(1, Math.ceil(updatedData.length / pageSize));
-      if (currentPage > newTotalPages) {
-        setCurrentPage(newTotalPages);
-      }
-
       try {
-        // Call the deleteRow function passed from props
         await deleteRow(deletePrompt.rowData.id);
       } catch (error) {
-        // If delete fails, revert the optimistic update
         console.error('Delete failed:', error);
         setLocalRowData(rowData);
       }
     } else {
-      // Fallback - log to console if no deleteRow function provided
       console.log('Delete confirmed for:', deletePrompt.rowData);
     }
     setDeletePrompt({ isOpen: false, rowData: null, rowIndex: -1 });
@@ -99,89 +118,6 @@ export default function BasicTableTwo({
 
   const handleCancel = () => {
     setDeletePrompt({ isOpen: false, rowData: null, rowIndex: -1 });
-  };
-
-  console.log(onRowClick)
-
-  const renderPagination = () => {
-    const pages = [];
-
-    pages.push(
-      <button
-        key="prev"
-        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
-        className={`px-3 py-1 mx-1 rounded ${currentPage === 1
-          ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400"
-          : "bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-          }`}
-      >
-        Previous
-      </button>
-    );
-
-    if (currentPage > 2) {
-      pages.push(
-        <button
-          key={1}
-          onClick={() => handlePageChange(1)}
-          className="px-3 py-1 mx-1 rounded bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          1
-        </button>
-      );
-    }
-
-    if (currentPage > 3) {
-      pages.push(<span key="ellipsis1" className="px-3 py-1 mx-1">...</span>);
-    }
-
-    for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) {
-      pages.push(
-        <button
-          key={i}
-          onClick={() => handlePageChange(i)}
-          className={`px-3 py-1 mx-1 rounded ${i === currentPage
-            ? "bg-blue-500 text-white dark:bg-blue-600"
-            : "bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-            }`}
-        >
-          {i}
-        </button>
-      );
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push(<span key="ellipsis2" className="px-3 py-1 mx-1">...</span>);
-    }
-
-    if (currentPage < totalPages - 1 && totalPages > 1) {
-      pages.push(
-        <button
-          key={totalPages}
-          onClick={() => handlePageChange(totalPages)}
-          className="px-3 py-1 mx-1 rounded bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          {totalPages}
-        </button>
-      );
-    }
-
-    pages.push(
-      <button
-        key="next"
-        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
-        className={`px-3 py-1 mx-1 rounded ${currentPage === totalPages
-          ? "bg-gray-200 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400"
-          : "bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-          }`}
-      >
-        Next
-      </button>
-    );
-
-    return pages;
   };
 
   // TrashIcon component
@@ -203,6 +139,40 @@ export default function BasicTableTwo({
     </svg>
   );
 
+  // Loading Spinner Component
+  const LoadingSpinner = () => (
+    <div className="flex justify-center items-center py-4">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Loading more...</span>
+    </div>
+  );
+
+  // Add scroll event listener to window instead of container
+  useEffect(() => {
+    if (!useInfiniteScroll) return;
+
+    const handleWindowScroll = () => {
+      if (!loadMoreData || !hasMore || isLoading || isThrottled) return;
+
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollThreshold = 200; // Load more when 200px from bottom
+
+      if (documentHeight - scrollTop - windowHeight < scrollThreshold) {
+        setIsThrottled(true);
+        loadMoreData().finally(() => {
+          setTimeout(() => {
+            setIsThrottled(false);
+          }, 500);
+        });
+      }
+    };
+
+    window.addEventListener('scroll', handleWindowScroll);
+    return () => window.removeEventListener('scroll', handleWindowScroll);
+  }, [loadMoreData, hasMore, isLoading, isThrottled, useInfiniteScroll]);
+
   return (
     <div className="flex flex-col">
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -219,18 +189,20 @@ export default function BasicTableTwo({
                     {column.header}
                   </TableCell>
                 ))}
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-                >
-                  Actions
-                </TableCell>
+                {deleteRow && (
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                  >
+                    Actions
+                  </TableCell>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayData.map((row, rowIndex) => (
+              {localRowData.map((row, rowIndex) => (
                 <TableRow
-                  key={rowIndex}
+                  key={row.id || rowIndex}
                   onClick={() => handleRowClick(row)}
                   className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors duration-150"
                 >
@@ -239,24 +211,41 @@ export default function BasicTableTwo({
                       {column.render ? column.render(row) : row[column.key]}
                     </TableCell>
                   ))}
-                  <TableCell className="px-5 py-3 text-sm">
-                    <button
-                      onClick={(e) => handleDeleteClick(e, row, rowIndex)}
-                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-150 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
-                      title="Delete"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </TableCell>
+                  {deleteRow && (
+                    <TableCell className="px-5 py-3 text-sm">
+                      <button
+                        onClick={(e) => handleDeleteClick(e, row, rowIndex)}
+                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-150 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                        title="Delete"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          
+          {/* Loading indicator for infinite scroll */}
+          {useInfiniteScroll && (isLoading || hasMore) && (
+            <div className="p-4">
+              {isLoading && <LoadingSpinner />}
+              {!isLoading && hasMore && (
+                <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Scroll down to load more...
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* No more data message */}
+          {useInfiniteScroll && !hasMore && localRowData.length > 0 && (
+            <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-white/[0.05]">
+              No more data to load
+            </div>
+          )}
         </div>
-      </div>
-
-      <div className="flex justify-center mt-4">
-        {renderPagination()}
       </div>
 
       {/* Custom Delete Confirmation Prompt */}

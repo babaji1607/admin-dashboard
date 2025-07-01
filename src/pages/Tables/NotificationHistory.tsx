@@ -1,7 +1,7 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getNotificationHistory, deleteNotification } from "../../api/Notifications";
 import { useNavigate } from "react-router";
 import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
@@ -9,6 +9,9 @@ import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
 export default function NotificationHistory() {
     const navigate = useNavigate();
     const [tableData, setTableData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Function to format UTC date to readable format
     const formatDate = (utcDateString: string) => {
@@ -40,35 +43,81 @@ export default function NotificationHistory() {
 
     const deleteNotificationRow = async (notificationId: string) => {
         try {
-            const token = localStorage.getItem('token')
+            const token = localStorage.getItem('token');
             if (!token) {
-                console.log('Token is not available or invalid')
-                return
+                console.log('Token is not available or invalid');
+                return;
             }
             await deleteNotification(
                 token,
                 notificationId,
                 (data) => console.log('Notification deleted successfully', data),
                 (error) => console.log('Failed to delete Notification', error)
-            )
+            );
         } catch (e) {
-            console.log(e)
+            console.log(e);
         }
-    }
+    };
 
-    useEffect(() => {
+    const loadData = useCallback(async (page: number, isInitial = false) => {
         const token = localStorage.getItem("token");
-
+        
         if (!token) {
             navigate("/signin");
             return;
         }
-        getNotificationHistory(token, data => { // it follows page pattern
-            console.log('data', data);
-            setTableData(data);
-        }, () => {
-            console.log('error');
-        })
+
+        setIsLoading(true);
+        
+        return new Promise<void>((resolve, reject) => {
+            // Note: You may need to modify getNotificationHistory API to accept page and limit parameters
+            // For now, using the existing API structure
+            getNotificationHistory(
+                token, 
+                (data) => {
+                    console.log('data', data);
+                    
+                    // If API doesn't support pagination yet, we'll handle client-side pagination
+                    // You should modify the API to accept page and limit parameters
+                    const pageSize = 10;
+                    const startIndex = (page - 1) * pageSize;
+                    const endIndex = startIndex + pageSize;
+                    const paginatedData = data.slice(startIndex, endIndex);
+                    
+                    if (isInitial) {
+                        setTableData(paginatedData);
+                        // Set hasMore based on total data length
+                        setHasMore(data.length > pageSize);
+                    } else {
+                        setTableData(prev => [...prev, ...paginatedData]);
+                        // Check if we have more data
+                        const totalLoaded = (page * pageSize);
+                        setHasMore(totalLoaded < data.length);
+                    }
+                    
+                    setIsLoading(false);
+                    resolve();
+                }, 
+                (error) => {
+                    console.log('error', error);
+                    setIsLoading(false);
+                    reject(error);
+                }
+            );
+        });
+    }, [navigate]);
+
+    const loadMoreData = useCallback(() => {
+        if (!isLoading && hasMore) {
+            const nextPage = currentPage + 1;
+            setCurrentPage(nextPage);
+            return loadData(nextPage, false);
+        }
+        return Promise.resolve();
+    }, [currentPage, isLoading, hasMore, loadData]);
+
+    useEffect(() => {
+        loadData(1, true);
     }, []);
 
     return (
@@ -83,6 +132,9 @@ export default function NotificationHistory() {
                     <BasicTableTwo
                         rowData={tableData}
                         deleteRow={deleteNotificationRow}
+                        loadMoreData={loadMoreData}
+                        hasMore={hasMore}
+                        isLoading={isLoading}
                         columns={[
                             {
                                 key: "title",

@@ -1,7 +1,7 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getAllReceipts } from "../../api/FeeReceipts";
 import { useNavigate } from "react-router";
 import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
@@ -9,22 +9,63 @@ import BasicTableTwo from "../../components/tables/BasicTables/BasicTableTwo";
 export default function FeeReceipts() {
     const navigate = useNavigate();
     const [tableData, setTableData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
+    const loadData = useCallback(async (page: number, isInitial = false) => {
         const token = localStorage.getItem("token");
-
+        
         if (!token) {
             navigate("/signin");
             return;
         }
-        getAllReceipts(1, 10, token, data => { // it follows page pattern
-            console.log('data', data);
-            setTableData(data);
-        }, () => {
-            console.log('error');
-        })
-    }, []);
 
+        setIsLoading(true);
+        
+        return new Promise<void>((resolve, reject) => {
+            getAllReceipts(
+                page, 
+                10, 
+                token, 
+                (data) => {
+                    console.log('data', data);
+                    
+                    if (isInitial) {
+                        setTableData(data);
+                    } else {
+                        setTableData(prev => [...prev, ...data]);
+                    }
+                    
+                    // Check if we have more data
+                    if (data.length < 10) {
+                        setHasMore(false);
+                    }
+                    
+                    setIsLoading(false);
+                    resolve();
+                }, 
+                (error) => {
+                    console.log('error', error);
+                    setIsLoading(false);
+                    reject(error);
+                }
+            );
+        });
+    }, [navigate]);
+
+    const loadMoreData = useCallback(() => {
+        if (!isLoading && hasMore) {
+            const nextPage = currentPage + 1;
+            setCurrentPage(nextPage);
+            return loadData(nextPage, false);
+        }
+        return Promise.resolve();
+    }, [currentPage, isLoading, hasMore, loadData]);
+
+    useEffect(() => {
+        loadData(1, true);
+    }, []);
 
     return (
         <>
@@ -38,6 +79,9 @@ export default function FeeReceipts() {
                     <BasicTableTwo
                         rowData={tableData}
                         navigationPath="/fee-detail"
+                        loadMoreData={loadMoreData}
+                        hasMore={hasMore}
+                        isLoading={isLoading}
                         columns={[
                             {
                                 key: "paid_on",
@@ -49,7 +93,7 @@ export default function FeeReceipts() {
                             },
                             {
                                 key: "student_id",
-                                header: "Sutdent ID"
+                                header: "Student ID"
                             }
                         ]}
                     />
