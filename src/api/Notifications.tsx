@@ -8,7 +8,7 @@ interface ApiResponse {
 export const getNotificationHistory = async (
     token: string,
     onSuccess: (data: any) => void = () => { },
-    onError: () => void = () => { }
+    onError: (data: any) => void = () => { }
 ): Promise<ApiResponse> => {
     try {
         const url = `${GLOBAL_URL}/notifications/all`;
@@ -25,8 +25,6 @@ export const getNotificationHistory = async (
 
         if (response.status === 200) {
             onSuccess(data);
-        } else {
-            onError();
         }
 
         return {
@@ -35,7 +33,7 @@ export const getNotificationHistory = async (
         };
     } catch (e) {
         console.error("Error fetching notifications:", e);
-        onError();
+        onError(e);
         return {};
     }
 };

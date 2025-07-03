@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   Table,
@@ -37,7 +37,7 @@ export default function BasicTableTwo({
   loadMoreData,
   hasMore = false,
   isLoading = false,
-  pageSize, // Keep for backward compatibility
+  // pageSize, // Keep for backward compatibility
 }: BasicTableTwoProps) {
   const [localRowData, setLocalRowData] = useState(rowData);
   const [deletePrompt, setDeletePrompt] = useState<{
@@ -61,24 +61,24 @@ export default function BasicTableTwo({
   }, [rowData]);
 
   // Throttled scroll handler for window scroll
-  const handleScroll = useCallback(() => {
-    if (!loadMoreData || !hasMore || isLoading || isThrottled) return;
+  // const handleScroll = useCallback(() => {
+  //   if (!loadMoreData || !hasMore || isLoading || isThrottled) return;
 
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const windowHeight = window.innerHeight;
-    const documentHeight = document.documentElement.scrollHeight;
-    const scrollThreshold = 200; // Load more when 200px from bottom
+  //   const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  //   const windowHeight = window.innerHeight;
+  //   const documentHeight = document.documentElement.scrollHeight;
+  //   const scrollThreshold = 200; // Load more when 200px from bottom
 
-    if (documentHeight - scrollTop - windowHeight < scrollThreshold) {
-      setIsThrottled(true);
-      loadMoreData().finally(() => {
-        // Reset throttle after a delay
-        setTimeout(() => {
-          setIsThrottled(false);
-        }, 500);
-      });
-    }
-  }, [loadMoreData, hasMore, isLoading, isThrottled]);
+  //   if (documentHeight - scrollTop - windowHeight < scrollThreshold) {
+  //     setIsThrottled(true);
+  //     loadMoreData().finally(() => {
+  //       // Reset throttle after a delay
+  //       setTimeout(() => {
+  //         setIsThrottled(false);
+  //       }, 500);
+  //     });
+  //   }
+  // }, [loadMoreData, hasMore, isLoading, isThrottled]);
 
 
 
@@ -226,7 +226,7 @@ export default function BasicTableTwo({
               ))}
             </TableBody>
           </Table>
-          
+
           {/* Loading indicator for infinite scroll */}
           {useInfiniteScroll && (isLoading || hasMore) && (
             <div className="p-4">
@@ -238,7 +238,7 @@ export default function BasicTableTwo({
               )}
             </div>
           )}
-          
+
           {/* No more data message */}
           {useInfiniteScroll && !hasMore && localRowData.length > 0 && (
             <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-white/[0.05]">

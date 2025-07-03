@@ -30,8 +30,21 @@ interface GalleryItem {
     date: string;
 }
 
-// ✅ Confirmation Modal component
-const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+interface ConfirmationModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+}
+
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    title,
+    message,
+}) => {
     if (!isOpen) return null;
 
     return (

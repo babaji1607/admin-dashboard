@@ -6,9 +6,16 @@ import { useEffect, useState, useCallback } from "react";
 import { getAllTeachers, deleteTeacher } from "../../api/Teachers";
 import { useNavigate } from "react-router";
 
+type Teacher = {
+    id: string;
+    name: string;
+    subject: string;
+    contact: string;
+};
+
 export default function TeacherTables() {
     const navigate = useNavigate();
-    const [tableData, setTableData] = useState([]);
+    const [tableData, setTableData] = useState<Teacher[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);

@@ -16,16 +16,16 @@ import {
   PieChart,
   Box,
   Plug,
-  LogIn,
-  UserPlus,
-  BarChart3,
-  LineChart,
-  AlertTriangle,
-  User,
-  Award,
-  MousePointer,
-  ImageIcon,
-  Video
+  // LogIn,
+  // UserPlus,
+  // BarChart3,
+  // LineChart,
+  // AlertTriangle,
+  // User,
+  // Award,
+  // MousePointer,
+  // ImageIcon,
+  // Video
 } from "lucide-react";
 
 import { useSidebar } from "../context/SidebarContext";

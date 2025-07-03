@@ -17,7 +17,7 @@ export const getAllStudents = async (
     limit: number,
     token: string,
     onSuccess: (data: any) => void = () => { },
-    onError: () => void = () => { }
+    onError: (error: ErrorResponse) => void = () => { }
 ): Promise<ApiResponse> => {
     try {
         const url = `${GLOBAL_URL}/students/showall?offset=${offset}&limit=${limit}`;
@@ -35,16 +35,24 @@ export const getAllStudents = async (
         if (response.status === 200) {
             onSuccess(data);
         } else {
-            onError();
+            onError({
+                status: response.status,
+                message: data?.detail || "Failed to fetch students",
+                data
+            });
         }
 
         return {
-            data: data,
+            data,
             status: response.status
         };
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error fetching students:", e);
-        onError();
+        onError({
+            status: null,
+            message: e instanceof Error ? e.message : "Network error",
+            error: e
+        });
         return {};
     }
 };
@@ -77,7 +85,7 @@ export const createStudent = async (
                 data
             });
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating student:", error);
         onError({
             status: null,
@@ -116,7 +124,7 @@ export const updateStudent = async (
                 data
             });
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating student:", error);
         onError({
             status: null,
@@ -154,7 +162,7 @@ export const deleteStudent = async (
                 data
             });
         }
-    } catch (error) {
+    } catch (error: any) {
         onError({
             status: null,
             message: error instanceof Error ? error.message : 'Network error',
@@ -162,8 +170,6 @@ export const deleteStudent = async (
         });
     }
 };
-
-
 
 /**
  * Search students by term using FastAPI endpoint.
@@ -173,18 +179,15 @@ export const deleteStudent = async (
  * @throws {Error} - Throws if request fails or no token is found.
  */
 export async function searchStudents(searchTerm: string) {
-    // Get token from localStorage
     const token = localStorage.getItem("token");
     if (!token) {
         throw new Error("Authorization token not found. Please log in.");
     }
 
-    // Validate input
     if (!searchTerm || typeof searchTerm !== "string") {
         throw new Error("Search term must be a non-empty string.");
     }
 
-    // Build URL
     const url = `${GLOBAL_URL}/students/search/by-term/?query=${encodeURIComponent(searchTerm)}`;
 
     try {
@@ -197,7 +200,6 @@ export async function searchStudents(searchTerm: string) {
         });
 
         if (!response.ok) {
-            // Try to parse error details from server
             let errorDetails = "";
             try {
                 const errorData = await response.json();
@@ -209,12 +211,11 @@ export async function searchStudents(searchTerm: string) {
             throw new Error(`Error ${response.status}: ${errorDetails}`);
         }
 
-        // Parse and return JSON
         const data = await response.json();
-        console.log("Students fetched", data)
+        console.log("Students fetched", data);
         return data;
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Failed to fetch students:", error);
         throw new Error(`Failed to fetch students: ${error.message}`);
     }

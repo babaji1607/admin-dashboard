@@ -44,7 +44,7 @@ export default function StudentTables() {
     const [searchResults, setSearchResults] = useState<Student[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchResults, setShowSearchResults] = useState(false);
-    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const searchResultsRef = useRef<HTMLDivElement>(null);
 
@@ -95,7 +95,7 @@ export default function StudentTables() {
                         setCurrentPage(page);
                         resolve();
                     },
-                    (error) => {
+                    (error: any) => {
                         console.log("error", error);
                         reject(error);
                     }
