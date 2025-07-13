@@ -4,6 +4,9 @@ import Alert from "../components/ui/alert/Alert";
 import { createStudent, updateStudent } from "../api/Students";
 import SelectDropdown from "../components/SelectDropdown";
 import { registerUser } from "../api/Auth";
+import AdditionalForm from "../components/FeePostForm";
+import FeePostsList from "../components/FeePostList";
+import { createFeePost } from "../api/Feepost";
 
 // Define option type
 interface OptionType {
@@ -66,6 +69,13 @@ const StudentForm = () => {
       ...prev,
       class_id: option ? option.value.toString() : ""
     }));
+  };
+
+  // Handler for additional form submission
+  const handleAdditionalFormSubmit = async (payload: any) => {
+    console.log("Additional form payload received in StudentForm:", payload);
+    // You can handle the payload here as needed
+    await createFeePost(payload)
   };
 
   const validateForm = () => {
@@ -324,6 +334,18 @@ const StudentForm = () => {
           </div>
         </form>
       </div>
+
+      {/* Additional Form Component */}
+      <AdditionalForm
+        onSubmit={handleAdditionalFormSubmit}
+        className="mt-6"
+        student_id={data?.id}
+      />
+      <br /><br />
+      <FeePostsList
+      studentId={data?.id}
+
+      />
     </div>
   );
 };

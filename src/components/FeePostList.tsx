@@ -1,0 +1,342 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { getFeePostsByStudent, deleteFeePost } from "../api/Feepost";
+
+// Define interfaces (matching your provided types)
+export interface FeePost {
+    student_id: string;
+    title: string;
+    other_fee: Record<string, number>;
+    deadline: string;
+    is_paid: boolean;
+    mode: "online" | "offline";
+    id: string;
+    creation_date: string;
+}
+
+export interface FeePostResponse {
+    total: number;
+    offset: number;
+    limit: number;
+    items: FeePost[];
+}
+
+interface FeePostsListProps {
+    studentId: string;
+    className?: string;
+}
+
+const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => {
+    const [feePosts, setFeePosts] = useState<FeePost[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [offset, setOffset] = useState(0);
+    const [total, setTotal] = useState(0);
+    const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
+    const observer = useRef<IntersectionObserver | null>(null);
+    const lastPostElementRef = useRef<HTMLDivElement | null>(null);
+    const throttleTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    const LIMIT = 10;
+
+    // Throttled fetch function
+    const throttledFetch = useCallback((currentOffset: number, reset = false) => {
+        if (throttleTimeout.current) {
+            clearTimeout(throttleTimeout.current);
+        }
+
+        throttleTimeout.current = setTimeout(async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const token = localStorage.getItem("token") || "";
+                const response = await getFeePostsByStudent(studentId, token, currentOffset, LIMIT);
+
+                if (response.success && response.data) {
+                    const { items, total: totalCount } = response.data;
+
+                    setFeePosts(prev => reset ? items : [...prev, ...items]);
+                    setTotal(totalCount);
+                    setHasMore(currentOffset + items.length < totalCount);
+                } else {
+                    setError(response.message || "Failed to fetch fee posts");
+                }
+            } catch (err) {
+                setError("Something went wrong while fetching fee posts");
+            } finally {
+                setLoading(false);
+            }
+        }, 300); // 300ms throttle delay
+    }, [studentId]);
+
+    // Initial load
+    useEffect(() => {
+        throttledFetch(0, true);
+        setOffset(0);
+    }, [studentId, throttledFetch]);
+
+    // Intersection observer for infinite scroll
+    const lastPostRef = useCallback((node: HTMLDivElement) => {
+        if (loading) return;
+
+        if (observer.current) observer.current.disconnect();
+
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore && !loading) {
+                const newOffset = offset + LIMIT;
+                setOffset(newOffset);
+                throttledFetch(newOffset);
+            }
+        });
+
+        if (node) observer.current.observe(node);
+    }, [loading, hasMore, offset, throttledFetch]);
+
+    // Format date
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    // Calculate total amount
+    const calculateTotal = (otherFee: Record<string, number>) => {
+        return Object.values(otherFee).reduce((sum, amount) => sum + amount, 0);
+    };
+
+    // Check if deadline has passed
+    const isDeadlinePassed = (deadline: string) => {
+        return new Date(deadline) < new Date();
+    };
+
+    // Handle delete fee post
+    const handleDeletePost = async (postId: string) => {
+        // Optimistic update - remove from UI immediately
+        setDeletingIds(prev => new Set(prev).add(postId));
+
+        try {
+            const token = localStorage.getItem("token") || "";
+            const response = await deleteFeePost(postId, token);
+
+            if (response.success) {
+                // Remove from state after successful deletion
+                setFeePosts(prev => prev.filter(post => post.id !== postId));
+                setTotal(prev => prev - 1);
+                setDeleteError(null);
+
+                // Show success message briefly
+                setDeleteError("Post deleted successfully");
+                setTimeout(() => setDeleteError(null), 3000);
+            } else {
+                // Revert optimistic update on failure
+                setDeletingIds(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(postId);
+                    return newSet;
+                });
+                setDeleteError(response.message || "Failed to delete post");
+                setTimeout(() => setDeleteError(null), 5000);
+            }
+        } catch (err) {
+            // Revert optimistic update on error
+            setDeletingIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(postId);
+                return newSet;
+            });
+            setDeleteError("Something went wrong while deleting the post");
+            setTimeout(() => setDeleteError(null), 5000);
+        }
+    };
+
+    return (
+        <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                    Fee Posts ({total})
+                </h2>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Showing {feePosts.length} of {total} posts
+                </div>
+            </div>
+
+            {(error || deleteError) && (
+                <div className="mb-6">
+                    <div className={`p-4 rounded-md border ${deleteError && deleteError.includes("successfully")
+                        ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                        : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                        }`}>
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                {deleteError && deleteError.includes("successfully") ? (
+                                    <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                ) : (
+                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                )}
+                            </div>
+                            <div className="ml-3">
+                                <p className={`text-sm font-medium ${deleteError && deleteError.includes("successfully")
+                                    ? "text-green-800 dark:text-green-200"
+                                    : "text-red-800 dark:text-red-200"
+                                    }`}>
+                                    {error || deleteError}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {feePosts.length === 0 && !loading && !error && (
+                <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No fee posts</h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        No fee posts found for this student.
+                    </p>
+                </div>
+            )}
+
+            <div className="space-y-4">
+                {feePosts.map((post, index) => {
+                    const isLast = index === feePosts.length - 1;
+                    const totalAmount = calculateTotal(post.other_fee);
+                    const deadlinePassed = isDeadlinePassed(post.deadline);
+
+                    return (
+                        <div
+                            key={post.id}
+                            ref={isLast ? lastPostRef : null}
+                            className={`bg-gray-50 dark:bg-blue-950 rounded-lg p-6 border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all ${deletingIds.has(post.id) ? 'opacity-50 pointer-events-none' : ''
+                                }`}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+                                        {post.title}
+                                    </h3>
+                                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                        <span className="flex items-center gap-1">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4M8 7h8M8 7H6a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-2" />
+                                            </svg>
+                                            Created: {formatDate(post.creation_date)}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Deadline: {formatDate(post.deadline)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-3">
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div className={`px-3 py-1 rounded-full text-xs font-medium ${post.is_paid
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                            : deadlinePassed
+                                                ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                                            }`}>
+                                            {post.is_paid ? 'Paid' : deadlinePassed ? 'Overdue' : 'Pending'}
+                                        </div>
+
+                                        <div className={`px-3 py-1 rounded-full text-xs font-medium ${post.mode === 'online'
+                                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                                            }`}>
+                                            {post.mode === 'online' ? 'Online' : 'Offline'}
+                                        </div>
+                                    </div>
+
+                                    {/* Delete Button */}
+                                    <button
+                                        onClick={() => handleDeletePost(post.id)}
+                                        disabled={deletingIds.has(post.id)}
+                                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Delete post"
+                                    >
+                                        {deletingIds.has(post.id) ? (
+                                            <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Fee Breakdown:
+                                    </h4>
+                                    <div className="space-y-1">
+                                        {Object.entries(post.other_fee).map(([feeType, amount]) => (
+                                            <div key={feeType} className="flex justify-between text-sm">
+                                                <span className="text-gray-600 dark:text-gray-400 capitalize">
+                                                    {feeType}:
+                                                </span>
+                                                <span className="font-medium text-gray-800 dark:text-gray-200">
+                                                    ₹{amount.toLocaleString()}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="md:text-right">
+                                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Total Amount:
+                                    </h4>
+                                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                        ₹{totalAmount.toLocaleString()}
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {loading && (
+                <div className="flex justify-center py-8">
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <svg className="animate-spin h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Loading more posts...</span>
+                    </div>
+                </div>
+            )}
+
+            {!hasMore && feePosts.length > 0 && (
+                <div className="text-center py-6">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        You've reached the end of the list
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default FeePostsList;
