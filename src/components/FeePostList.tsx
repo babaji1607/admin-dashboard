@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getFeePostsByStudent, deleteFeePost } from "../api/Feepost";
+import { getFeePostsByStudent, deleteFeePost, updateFeePostStatus } from "../api/Feepost";
 
 // Define interfaces (matching your provided types)
 export interface FeePost {
@@ -25,6 +25,18 @@ interface FeePostsListProps {
     className?: string;
 }
 
+interface UpdateStatusPayload {
+    mode: "online" | "offline";
+    is_paid: boolean;
+}
+
+interface UpdateModalData {
+    postId: string;
+    currentStatus: boolean;
+    currentMode: "online" | "offline";
+    title: string;
+}
+
 const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => {
     const [feePosts, setFeePosts] = useState<FeePost[]>([]);
     const [loading, setLoading] = useState(false);
@@ -34,6 +46,11 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
     const [total, setTotal] = useState(0);
     const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
     const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
+    const [updateError, setUpdateError] = useState<string | null>(null);
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const [updateModalData, setUpdateModalData] = useState<UpdateModalData | null>(null);
+    const [modalPayload, setModalPayload] = useState<UpdateStatusPayload>({ mode: "online", is_paid: false });
 
     const observer = useRef<IntersectionObserver | null>(null);
     const lastPostElementRef = useRef<HTMLDivElement | null>(null);
@@ -156,6 +173,63 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
         }
     };
 
+    // Handle update fee post status
+    const handleUpdateStatus = (post: FeePost) => {
+        if (post.is_paid) return; // Don't allow updates if already paid
+
+        setUpdateModalData({
+            postId: post.id,
+            currentStatus: post.is_paid,
+            currentMode: post.mode,
+            title: post.title
+        });
+        setModalPayload({
+            mode: post.mode,
+            is_paid: post.is_paid
+        });
+        setShowUpdateModal(true);
+    };
+
+    // Confirm update status
+    const confirmUpdateStatus = async () => {
+        if (!updateModalData) return;
+
+        setUpdatingIds(prev => new Set(prev).add(updateModalData.postId));
+        setShowUpdateModal(false);
+
+        try {
+            const token = localStorage.getItem("token") || "";
+            await updateFeePostStatus(updateModalData.postId, modalPayload);
+
+            // Update the fee post in state
+            setFeePosts(prev => prev.map(post =>
+                post.id === updateModalData.postId
+                    ? { ...post, is_paid: modalPayload.is_paid, mode: modalPayload.mode }
+                    : post
+            ));
+
+            setUpdateError("Status updated successfully");
+            setTimeout(() => setUpdateError(null), 3000);
+        } catch (err) {
+            setUpdateError("Failed to update status");
+            setTimeout(() => setUpdateError(null), 5000);
+        } finally {
+            setUpdatingIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(updateModalData.postId);
+                return newSet;
+            });
+            setUpdateModalData(null);
+        }
+    };
+
+    // Cancel update
+    const cancelUpdate = () => {
+        setShowUpdateModal(false);
+        setUpdateModalData(null);
+        setModalPayload({ mode: "online", is_paid: false });
+    };
+
     return (
         <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 ${className}`}>
             <div className="flex justify-between items-center mb-6">
@@ -167,15 +241,15 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
                 </div>
             </div>
 
-            {(error || deleteError) && (
+            {(error || deleteError || updateError) && (
                 <div className="mb-6">
-                    <div className={`p-4 rounded-md border ${deleteError && deleteError.includes("successfully")
+                    <div className={`p-4 rounded-md border ${(deleteError && deleteError.includes("successfully")) || (updateError && updateError.includes("successfully"))
                         ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
                         : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
                         }`}>
                         <div className="flex">
                             <div className="flex-shrink-0">
-                                {deleteError && deleteError.includes("successfully") ? (
+                                {((deleteError && deleteError.includes("successfully")) || (updateError && updateError.includes("successfully"))) ? (
                                     <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
@@ -186,11 +260,11 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
                                 )}
                             </div>
                             <div className="ml-3">
-                                <p className={`text-sm font-medium ${deleteError && deleteError.includes("successfully")
+                                <p className={`text-sm font-medium ${((deleteError && deleteError.includes("successfully")) || (updateError && updateError.includes("successfully")))
                                     ? "text-green-800 dark:text-green-200"
                                     : "text-red-800 dark:text-red-200"
                                     }`}>
-                                    {error || deleteError}
+                                    {error || deleteError || updateError}
                                 </p>
                             </div>
                         </div>
@@ -215,12 +289,14 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
                     const isLast = index === feePosts.length - 1;
                     const totalAmount = calculateTotal(post.other_fee);
                     const deadlinePassed = isDeadlinePassed(post.deadline);
+                    const isUpdating = updatingIds.has(post.id);
+                    const isDeleting = deletingIds.has(post.id);
 
                     return (
                         <div
                             key={post.id}
                             ref={isLast ? lastPostRef : null}
-                            className={`bg-gray-50 dark:bg-blue-950 rounded-lg p-6 border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all ${deletingIds.has(post.id) ? 'opacity-50 pointer-events-none' : ''
+                            className={`bg-gray-50 dark:bg-blue-950 rounded-lg p-6 border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all ${(isDeleting || isUpdating) ? 'opacity-50 pointer-events-none' : ''
                                 }`}
                         >
                             <div className="flex justify-between items-start mb-4">
@@ -263,14 +339,35 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
                                         </div>
                                     </div>
 
+                                    {/* Update Status Button */}
+                                    <button
+                                        onClick={() => handleUpdateStatus(post)}
+                                        disabled={post.is_paid || isUpdating || isDeleting}
+                                        className={`p-2 rounded-md transition-colors ${post.is_paid
+                                            ? 'text-gray-400 cursor-not-allowed'
+                                            : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        title={post.is_paid ? "Already paid" : "Update status"}
+                                    >
+                                        {isUpdating ? (
+                                            <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        )}
+                                    </button>
+
                                     {/* Delete Button */}
                                     <button
                                         onClick={() => handleDeletePost(post.id)}
-                                        disabled={deletingIds.has(post.id)}
+                                        disabled={isDeleting || isUpdating}
                                         className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Delete post"
                                     >
-                                        {deletingIds.has(post.id) ? (
+                                        {isDeleting ? (
                                             <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                             </svg>
@@ -309,7 +406,6 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
                                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                                         ₹{totalAmount.toLocaleString()}
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -333,6 +429,91 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         You've reached the end of the list
                     </p>
+                </div>
+            )}
+
+            {/* Update Status Modal */}
+            {showUpdateModal && updateModalData && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                            Update Fee Status
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                            Update the payment status for: <strong>{updateModalData.title}</strong>
+                        </p>
+
+                        <div className="space-y-4">
+                            {/* Payment Status Toggle */}
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                                    Payment Status
+                                </label>
+                                <div className="flex items-center space-x-3">
+                                    <button
+                                        onClick={() => setModalPayload(prev => ({ ...prev, is_paid: false }))}
+                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${!modalPayload.is_paid
+                                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-600'
+                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 border border-gray-300 dark:border-gray-600'
+                                            }`}
+                                    >
+                                        Unpaid
+                                    </button>
+                                    <button
+                                        onClick={() => setModalPayload(prev => ({ ...prev, is_paid: true }))}
+                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${modalPayload.is_paid
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 border border-green-300 dark:border-green-600'
+                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 border border-gray-300 dark:border-gray-600'
+                                            }`}
+                                    >
+                                        Paid
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Payment Mode Toggle */}
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                                    Payment Mode
+                                </label>
+                                <div className="flex items-center space-x-3">
+                                    <button
+                                        onClick={() => setModalPayload(prev => ({ ...prev, mode: "online" }))}
+                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${modalPayload.mode === "online"
+                                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-300 dark:border-blue-600'
+                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 border border-gray-300 dark:border-gray-600'
+                                            }`}
+                                    >
+                                        Online
+                                    </button>
+                                    <button
+                                        onClick={() => setModalPayload(prev => ({ ...prev, mode: "offline" }))}
+                                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${modalPayload.mode === "offline"
+                                            ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400 border border-gray-300 dark:border-gray-600'
+                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 border border-gray-300 dark:border-gray-600'
+                                            }`}
+                                    >
+                                        Offline
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end space-x-3 mt-6">
+                            <button
+                                onClick={cancelUpdate}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmUpdateStatus}
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                            >
+                                Update Status
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

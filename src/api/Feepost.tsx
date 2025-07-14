@@ -142,3 +142,43 @@ export async function deleteFeePost(
         };
     }
 }
+
+
+
+type UpdateStatusPayload = {
+    mode: "online" | "offline";
+    is_paid: boolean;
+};
+
+export async function updateFeePostStatus(
+    feePostId: string,
+    payload: UpdateStatusPayload
+): Promise<void> {
+    const url = `${GLOBAL_URL}/feepost/${feePostId}/status`;
+
+    try {
+        const token = localStorage.getItem('token')
+        const response = await fetch(url, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(
+                `Failed to update status: ${response.status} ${errorData?.detail || response.statusText
+                }`
+            );
+        }
+
+        console.log("Fee post status updated successfully.");
+    } catch (error) {
+        console.error("Error updating fee post status:", error);
+        throw error;
+    }
+}
