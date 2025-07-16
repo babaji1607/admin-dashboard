@@ -335,17 +335,20 @@ const StudentForm = () => {
         </form>
       </div>
 
-      {/* Additional Form Component */}
-      <AdditionalForm
-        onSubmit={handleAdditionalFormSubmit}
-        className="mt-6"
-        student_id={data?.id}
-      />
-      <br /><br />
-      <FeePostsList
-      studentId={data?.id}
-
-      />
+      {/* Only show AdditionalForm and FeePostsList when updating an existing student */}
+      {isUpdate && data?.id && (
+        <>
+          <AdditionalForm
+            onSubmit={handleAdditionalFormSubmit}
+            className="mt-6"
+            student_id={data.id}
+          />
+          <br /><br />
+          <FeePostsList
+            studentId={data.id}
+          />
+        </>
+      )}
     </div>
   );
 };

@@ -3,7 +3,8 @@ import { useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
-import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
+// import BasicTableOne from "../../components/tables/BasicTables/BasicTableOne";
+import BasicTableForClass from "../../components/tables/BasicTables/BasicTableForClass";
 import { getAllClassrooms, deleteClassroom, createClassroom } from "../../api/Classes";
 import { v4 as generateUUID } from "uuid";
 import SelectDropdownTeachers from "../../components/SelectDropdownTeachers";
@@ -344,7 +345,7 @@ const ClassroomTable: React.FC = () => {
                     </button>
                 </div>
 
-                <BasicTableOne
+                <BasicTableForClass
                     columns={columns}
                     rowData={tableData}
                     onRowClick={handleRowClick}

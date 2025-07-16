@@ -304,7 +304,7 @@ export default function DynamicTableWithNotification({
     await sendSingleNotification(
       title,
       message,
-      notificationChannel,
+      "N/A", // make sure not to send the channel 
       selectedRecipient?.id,
       selectedRecipient?.notification_token,
       (data) => {

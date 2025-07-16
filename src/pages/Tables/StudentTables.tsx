@@ -216,7 +216,7 @@ export default function StudentTables() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                     <button
                         onClick={() => navigate("/student_form")}
-                        className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors duration-200 shadow-md hover:shadow-lg"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200"
                     >
                         <span className="text-lg">+</span>
                         <span>Create Student</span>
