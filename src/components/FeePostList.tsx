@@ -53,8 +53,8 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
     const [modalPayload, setModalPayload] = useState<UpdateStatusPayload>({ mode: "online", is_paid: false });
 
     const observer = useRef<IntersectionObserver | null>(null);
-    const lastPostElementRef = useRef<HTMLDivElement | null>(null);
-    const throttleTimeout = useRef<NodeJS.Timeout | null>(null);
+    // const lastPostElementRef = useRef<HTMLDivElement | null>(null);
+    const throttleTimeout = useRef<number | null>(null);
 
     const LIMIT = 10;
 
@@ -198,7 +198,6 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
         setShowUpdateModal(false);
 
         try {
-            const token = localStorage.getItem("token") || "";
             await updateFeePostStatus(updateModalData.postId, modalPayload);
 
             // Update the fee post in state

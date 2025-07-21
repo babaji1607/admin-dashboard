@@ -402,7 +402,7 @@ const ClassroomForm = () => {
                   Fee Details *
                 </label>
                 <div className="space-y-3 bg-white dark:bg-gray-700 p-4 rounded-md border border-gray-200 dark:border-gray-600">
-                  {feeFormData.other_fee.map((feeItem, index) => (
+                  {feeFormData.other_fee.map((feeItem) => (
                     <div key={feeItem.id} className="flex gap-3 items-center">
                       <div className="flex-1">
                         <input
@@ -536,8 +536,8 @@ const ClassroomForm = () => {
                   onClick={handleFeeFormSubmit}
                   disabled={isSubmitting}
                   className={`w-full py-3 rounded-md transition font-medium flex items-center justify-center gap-2 ${isSubmitting
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
                     } text-white`}
                 >
                   {isSubmitting ? (

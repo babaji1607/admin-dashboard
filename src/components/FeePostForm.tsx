@@ -93,7 +93,7 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
         };
 
         try {
-            const response = await createFeePost(payload, "your-auth-token-here"); // replace with actual token logic
+            const response = await createFeePost(payload); // replace with actual token logic
 
             if (response.success) {
                 setAlert({
@@ -184,7 +184,7 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                         Other Fees
                     </label>
                     <div className="space-y-3 bg-gray-50 dark:bg-blue-950 p-4 rounded-md border border-gray-200 dark:border-gray-600">
-                        {formData.other_fee.map((feeItem, index) => (
+                        {formData.other_fee.map((feeItem) => (
                             <div key={feeItem.id} className="flex gap-3 items-center">
                                 <div className="flex-1">
                                     <input

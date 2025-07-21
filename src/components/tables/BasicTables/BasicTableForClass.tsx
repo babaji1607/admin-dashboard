@@ -7,7 +7,7 @@ import {
     TableRow,
 } from "../../ui/table";
 import NotificationForm from "./NotificationForm";
-import { sendMassNotification, sendSingleNotification } from "../../../api/Notifications";
+import { sendMassNotification } from "../../../api/Notifications";
 import { deleteUser } from "../../../api/Auth";
 
 interface Column {
@@ -33,7 +33,7 @@ interface DynamicTableProps {
 export default function BasicTableForClass({
     columns,
     rowData,
-    notificationChannel,
+    // notificationChannel,
     onRowClick = () => { },
     deleteRow = () => { },
     onRowDeleted = () => { },
@@ -573,7 +573,7 @@ export default function BasicTableForClass({
             <NotificationForm
                 isOpen={isNotifyAllFormOpen}
                 onClose={() => setIsNotifyAllFormOpen(false)}
-                recipient="All Students"
+                recipient="All Students and Teachers"
                 onSubmit={handleNotifyAllSubmit}
                 isNotifyAll={true}
             />

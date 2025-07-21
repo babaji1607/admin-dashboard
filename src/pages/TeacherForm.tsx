@@ -11,7 +11,7 @@ const TeacherForm = () => {
     const isUpdate = data.isUpdate || false;
 
     const [isEditing, setIsEditing] = useState(!isUpdate);
-    
+
     const [form, setForm] = useState({
         name: data.name || "",
         age: data.age || "",
@@ -167,7 +167,7 @@ const TeacherForm = () => {
         return (
             <>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username (credentials)</label>
                     <input
                         type="text"
                         name="email"
