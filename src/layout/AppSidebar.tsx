@@ -16,6 +16,7 @@ import {
   PieChart,
   Box,
   Plug,
+  ScanEye
   // LogIn,
   // UserPlus,
   // BarChart3,
@@ -77,6 +78,11 @@ const navItems: NavItem[] = [
     icon: <Image size={20} />,
     name: "Gallery",
     path: "/school_gallery",
+  },
+  {
+    icon: <ScanEye size={20} />,
+    name: "Reset Password",
+    path: "/reset_password",
   },
 ];
 

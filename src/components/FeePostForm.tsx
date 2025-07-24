@@ -36,6 +36,9 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
         mode: "online",
     });
 
+    // Add loading state
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const [alert, setAlert] = useState({
         type: "success" as "success" | "error",
         message: "",
@@ -75,6 +78,14 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Prevent double submission
+        if (isSubmitting) {
+            return;
+        }
+
+        setIsSubmitting(true);
+        setAlert({ ...alert, show: false }); // Hide any previous alerts
 
         const otherFeeObject = formData.other_fee.reduce((acc, item) => {
             if (item.fee_type && item.fee_amount) {
@@ -128,6 +139,9 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                 message: "Something went wrong while submitting.",
                 show: true,
             });
+        } finally {
+            // Always reset loading state
+            setIsSubmitting(false);
         }
 
         // Hide alert after 3s
@@ -146,15 +160,27 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
 
             {alert.show && (
                 <div className="mb-6">
-                    <div className="p-4 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <div className={`p-4 rounded-md border ${alert.type === 'success'
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        }`}>
                         <div className="flex">
                             <div className="flex-shrink-0">
-                                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
+                                {alert.type === 'success' ? (
+                                    <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                ) : (
+                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                )}
                             </div>
                             <div className="ml-3">
-                                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                <p className={`text-sm font-medium ${alert.type === 'success'
+                                    ? 'text-green-800 dark:text-green-200'
+                                    : 'text-red-800 dark:text-red-200'
+                                    }`}>
                                     {alert.message}
                                 </p>
                             </div>
@@ -173,7 +199,8 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                         type="text"
                         value={formData.title}
                         onChange={(e) => handleFormChange("title", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        disabled={isSubmitting}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         placeholder="Enter title"
                     />
                 </div>
@@ -191,7 +218,8 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                                         type="text"
                                         value={feeItem.fee_type}
                                         onChange={(e) => handleFeeItemChange(feeItem.id, "fee_type", e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                        disabled={isSubmitting}
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="Fee type"
                                     />
                                 </div>
@@ -200,7 +228,8 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                                         type="number"
                                         value={feeItem.fee_amount}
                                         onChange={(e) => handleFeeItemChange(feeItem.id, "fee_amount", e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                        disabled={isSubmitting}
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="Fee amount"
                                     />
                                 </div>
@@ -208,7 +237,8 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => removeFeeItem(feeItem.id)}
-                                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                        disabled={isSubmitting}
+                                        className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -220,7 +250,8 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                         <button
                             type="button"
                             onClick={addFeeItem}
-                            className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                            disabled={isSubmitting}
+                            className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -239,7 +270,8 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                         type="datetime-local"
                         value={formData.deadline}
                         onChange={(e) => handleFormChange("deadline", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        disabled={isSubmitting}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
 
@@ -249,17 +281,20 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                         Payment Status
                     </label>
                     <div className="flex items-center gap-3">
-
                         <div className="relative">
                             <input
                                 type="checkbox"
                                 checked={formData.is_paid}
                                 onChange={(e) => handleFormChange("is_paid", e.target.checked)}
+                                disabled={isSubmitting}
                                 className="sr-only"
                             />
                             <div
-                                onClick={() => handleFormChange("is_paid", !formData.is_paid)}
-                                className={`w-11 h-6 rounded-full cursor-pointer transition-colors ${formData.is_paid ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
+                                onClick={() => !isSubmitting && handleFormChange("is_paid", !formData.is_paid)}
+                                className={`w-11 h-6 rounded-full transition-colors ${isSubmitting
+                                    ? 'cursor-not-allowed opacity-50'
+                                    : 'cursor-pointer'
+                                    } ${formData.is_paid ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
                                     }`}
                             >
                                 <div
@@ -280,23 +315,25 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                         Mode
                     </label>
                     <div className="flex gap-6">
-                        <label className="flex items-center cursor-pointer">
+                        <label className={`flex items-center ${isSubmitting ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
                             <input
                                 type="radio"
                                 value="online"
                                 checked={formData.mode === "online"}
                                 onChange={(e) => handleFormChange("mode", e.target.value as "online" | "offline")}
-                                className="mr-2 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                                disabled={isSubmitting}
+                                className="mr-2 text-blue-600 focus:ring-blue-500 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-300">Online</span>
                         </label>
-                        <label className="flex items-center cursor-pointer">
+                        <label className={`flex items-center ${isSubmitting ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
                             <input
                                 type="radio"
                                 value="offline"
                                 checked={formData.mode === "offline"}
                                 onChange={(e) => handleFormChange("mode", e.target.value as "online" | "offline")}
-                                className="mr-2 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                                disabled={isSubmitting}
+                                className="mr-2 text-blue-600 focus:ring-blue-500 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                             <span className="text-sm text-gray-700 dark:text-gray-300">Offline</span>
                         </label>
@@ -307,9 +344,23 @@ const AdditionalForm: React.FC<AdditionalFormProps> = ({
                 <div className="md:col-span-2 mt-4">
                     <button
                         type="submit"
-                        className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium"
+                        disabled={isSubmitting}
+                        className={`w-full py-3 rounded-md transition font-medium flex items-center justify-center space-x-2 ${isSubmitting
+                            ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed text-white'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            }`}
                     >
-                        Submit Additional Information
+                        {isSubmitting ? (
+                            <>
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Submitting...</span>
+                            </>
+                        ) : (
+                            <span>Submit Additional Information</span>
+                        )}
                     </button>
                 </div>
             </form>

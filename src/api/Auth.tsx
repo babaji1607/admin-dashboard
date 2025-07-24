@@ -170,3 +170,47 @@ export const deleteUser = async (
         });
     }
 };
+
+type ResetPasswordPayload = {
+    user_email: string;
+    new_password: string;
+};
+
+type ResetPasswordResponse = {
+    message: string;
+    success: boolean;
+};
+
+export const resetPassword = async (
+    payload: ResetPasswordPayload,
+    token: string
+): Promise<ResetPasswordResponse> => {
+    try {
+        const response = await fetch(
+            `${GLOBAL_URL}/admin/reset-password`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            }
+        );
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(
+                errorData?.detail || `Request failed with status ${response.status}`
+            );
+        }
+
+        const data: ResetPasswordResponse = await response.json();
+        return data;
+    } catch (error: any) {
+        console.error('Reset password error:', error.message);
+        throw new Error(`Reset password failed: ${error.message}`);
+    }
+};
+

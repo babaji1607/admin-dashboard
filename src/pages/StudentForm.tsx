@@ -14,12 +14,15 @@ interface OptionType {
   value: string | number;
 }
 
+type TabType = 'student' | 'createFee' | 'feeList';
+
 const StudentForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const data = location.state || {};
   const isUpdate = data.isUpdate || false;
 
+  const [activeTab, setActiveTab] = useState<TabType>('student');
   const [isEditing, setIsEditing] = useState(!isUpdate);
 
   const [form, setForm] = useState({
@@ -75,7 +78,9 @@ const StudentForm = () => {
   const handleAdditionalFormSubmit = async (payload: any) => {
     console.log("Additional form payload received in StudentForm:", payload);
     // You can handle the payload here as needed
-    await createFeePost(payload)
+    await createFeePost(payload);
+    // After successful creation, switch to fee list tab
+    setActiveTab('feeList');
   };
 
   const validateForm = () => {
@@ -263,15 +268,102 @@ const StudentForm = () => {
     );
   };
 
+  const renderTabs = () => {
+    const tabs = [
+      { id: 'student', label: 'Student Information', icon: '👤' },
+      ...(isUpdate && data?.id ? [
+        { id: 'createFee' as TabType, label: 'Create Fee Post', icon: '💰' },
+        { id: 'feeList' as TabType, label: 'Fee Posts List', icon: '📋' }
+      ] : [])
+    ];
+
+    return (
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap flex items-center space-x-2 ${activeTab === tab.id
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+    );
+  };
+
+  const renderStudentForm = () => (
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="md:col-span-2">
+        <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Student Information</h3>
+      </div>
+      {renderField("Name", "name", "text", true, true)}
+      {renderField("Age", "age", "number", true)}
+      {renderField("Roll Number", "roll_number", "number", true)}
+      {renderField("Date of Birth", "date_of_birth", "date", true)}
+      {renderField("Contact", "contact", "text", true)}
+      {renderField("Address", "address", "textarea", true)}
+      {renderField("Class", "class_id", "select", true, true)}
+
+      <div className="md:col-span-2 border-t border-gray-200 dark:border-gray-700 pt-6 mt-2">
+        <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Parent Information</h3>
+      </div>
+      {renderField("Father's Name", "FatherName", "text", true)}
+      {renderField("Father's Contact", "FatherContact", "text", true)}
+      {renderField("Mother's Name", "MotherName", "text", true)}
+      {renderField("Mother's Contact", "MotherContact", "text", true)}
+
+      {renderAuthFields()}
+
+      <div className="md:col-span-2 mt-4">
+        <button
+          type="submit"
+          className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+          disabled={isUpdate && !isEditing}
+        >
+          {isUpdate ? (isEditing ? "Update Student" : "View Student") : "Create Student"}
+        </button>
+      </div>
+    </form>
+  );
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'student':
+        return renderStudentForm();
+      case 'createFee':
+        return (
+          <AdditionalForm
+            onSubmit={handleAdditionalFormSubmit}
+            student_id={data.id}
+          />
+        );
+      case 'feeList':
+        return (
+          <FeePostsList
+            studentId={data.id}
+          />
+        );
+      default:
+        return renderStudentForm();
+    }
+  };
+
   return (
     <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-            {isUpdate ? "Student Details" : "Create Student"}
+            {isUpdate ? "Student Management" : "Create Student"}
           </h2>
           <div className="flex items-center space-x-4">
-            {isUpdate && (
+            {isUpdate && activeTab === 'student' && (
               <button
                 onClick={() => setIsEditing(!isEditing)}
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
@@ -301,54 +393,9 @@ const StudentForm = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Student Information</h3>
-          </div>
-          {renderField("Name", "name", "text", true, true)}
-          {renderField("Age", "age", "number", true)}
-          {renderField("Roll Number", "roll_number", "number", true)}
-          {renderField("Date of Birth", "date_of_birth", "date", true)}
-          {renderField("Contact", "contact", "text", true)}
-          {renderField("Address", "address", "textarea", true)}
-          {renderField("Class", "class_id", "select", true, true)}
-
-          <div className="md:col-span-2 border-t border-gray-200 dark:border-gray-700 pt-6 mt-2">
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Parent Information</h3>
-          </div>
-          {renderField("Father's Name", "FatherName", "text", true)}
-          {renderField("Father's Contact", "FatherContact", "text", true)}
-          {renderField("Mother's Name", "MotherName", "text", true)}
-          {renderField("Mother's Contact", "MotherContact", "text", true)}
-
-          {renderAuthFields()}
-
-          <div className="md:col-span-2 mt-4">
-            <button
-              type="submit"
-              className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-              disabled={isUpdate && !isEditing}
-            >
-              {isUpdate ? (isEditing ? "Update Student" : "View Student") : "Create Student"}
-            </button>
-          </div>
-        </form>
+        {renderTabs()}
+        {renderTabContent()}
       </div>
-
-      {/* Only show AdditionalForm and FeePostsList when updating an existing student */}
-      {isUpdate && data?.id && (
-        <>
-          <AdditionalForm
-            onSubmit={handleAdditionalFormSubmit}
-            className="mt-6"
-            student_id={data.id}
-          />
-          <br /><br />
-          <FeePostsList
-            studentId={data.id}
-          />
-        </>
-      )}
     </div>
   );
 };

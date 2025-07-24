@@ -30,6 +30,7 @@ import ClassroomForm from "./pages/ClassroomForm";
 import AttendanceDetail from "./pages/AttendanceDetail";
 import FeeDetail from "./pages/FeeDetail";
 import SchoolGallary from './pages/SchoolGallary'
+import ResetPassword from "./pages/ResetPassword";
 
 // ✅ Simple ProtectedRoute component
 interface ProtectedRouteProps {
@@ -79,6 +80,7 @@ export default function App() {
                   <Route path="/student_form" element={<StudentForm />} />
                   <Route path="/teacher_form" element={<TeacherForm />} />
                   <Route path="/classroom_form" element={<ClassroomForm />} />
+                  <Route path="/reset_password" element={<ResetPassword />} />
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/avatars" element={<Avatars />} />
                   <Route path="/badge" element={<Badges />} />
