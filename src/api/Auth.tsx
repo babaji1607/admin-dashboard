@@ -100,11 +100,13 @@ export const registerUser = async (
     };
 
     try {
+        const token = localStorage.getItem('token')
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(payload)
         });
