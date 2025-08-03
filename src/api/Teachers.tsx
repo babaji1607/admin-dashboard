@@ -54,7 +54,7 @@ export const createTeacher = async (
     onError: (error: ErrorResponse) => void
 ): Promise<void> => {
     try {
-        const response = await fetch(`${GLOBAL_URL}/teachers/create/`, {
+        const response = await fetch(`${GLOBAL_URL}/teachers/create`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ export const updateTeacher = async (
     onError: (error: ErrorResponse) => void
 ): Promise<void> => {
     try {
-        const response = await fetch(`${GLOBAL_URL}/teachers/teacher/${teacherId}/`, {
+        const response = await fetch(`${GLOBAL_URL}/teachers/teacher/${teacherId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
