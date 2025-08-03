@@ -34,7 +34,7 @@ export const getAllTeachers = async (
 
         if (response.status === 200) {
             onSuccess(data);
-        } 
+        }
 
         return {
             data: data,

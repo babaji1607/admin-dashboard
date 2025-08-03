@@ -53,7 +53,7 @@ export const sendMassNotification = async (
             throw new Error('Authentication token not found in localStorage.');
         }
 
-        const response = await fetch(`${GLOBAL_URL}/notifications/`, {
+        const response = await fetch(`${GLOBAL_URL}/notifications`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -100,7 +100,7 @@ export const sendSingleNotification = async (
             throw new Error('Authentication token not found in localStorage.');
         }
 
-        const response = await fetch(`${GLOBAL_URL}/notifications/`, {
+        const response = await fetch(`${GLOBAL_URL}/notifications`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',

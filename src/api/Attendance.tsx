@@ -21,7 +21,7 @@ export const getAttendanceSessions = async (
         if (date) queryParams.append("date", date);
         if (teacher_id) queryParams.append("teacher_id", teacher_id);
 
-        const url = `${GLOBAL_URL}/attendance/sessions/?${queryParams.toString()}`;
+        const url = `${GLOBAL_URL}/attendance/sessions?${queryParams.toString()}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -69,7 +69,7 @@ export const getAttendanceSessionsAlt = async (
         if (date) queryParams.append("date", date);
         if (teacher_id) queryParams.append("teacher_id", teacher_id);
 
-        const url = `${GLOBAL_URL}/attendance/sessions/?${queryParams.toString()}`;
+        const url = `${GLOBAL_URL}/attendance/sessions?${queryParams.toString()}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -123,7 +123,7 @@ export const getAttendanceSessionsWithOptions = async (
         if (date) queryParams.append("date", date);
         if (teacher_id) queryParams.append("teacher_id", teacher_id);
 
-        const url = `${GLOBAL_URL}/attendance/sessions/?${queryParams.toString()}`;
+        const url = `${GLOBAL_URL}/attendance/sessions?${queryParams.toString()}`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -221,7 +221,7 @@ export const updateAttendanceSession = async (
     }) => void
 ): Promise<void> => {
     try {
-        const response = await fetch(`${GLOBAL_URL}/attendance/session/${sessionId}/`, {
+        const response = await fetch(`${GLOBAL_URL}/attendance/session/${sessionId}`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,

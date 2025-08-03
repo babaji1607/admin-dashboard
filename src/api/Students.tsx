@@ -103,7 +103,7 @@ export const updateStudent = async (
     onError: (error: ErrorResponse) => void
 ): Promise<void> => {
     try {
-        const response = await fetch(`${GLOBAL_URL}/students/student/${studentId}/`, {
+        const response = await fetch(`${GLOBAL_URL}/students/student/${studentId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -188,7 +188,7 @@ export async function searchStudents(searchTerm: string) {
         throw new Error("Search term must be a non-empty string.");
     }
 
-    const url = `${GLOBAL_URL}/students/search/by-term/?query=${encodeURIComponent(searchTerm)}`;
+    const url = `${GLOBAL_URL}/students/search/by-term?query=${encodeURIComponent(searchTerm)}`;
 
     try {
         const response = await fetch(url, {
