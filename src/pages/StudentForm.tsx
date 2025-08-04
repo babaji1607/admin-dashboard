@@ -78,7 +78,7 @@ const StudentForm = () => {
   const handleAdditionalFormSubmit = async (payload: any) => {
     console.log("Additional form payload received in StudentForm:", payload);
     // You can handle the payload here as needed
-    await createFeePost(payload);
+    // await createFeePost(payload);
     // After successful creation, switch to fee list tab
     setActiveTab('feeList');
   };

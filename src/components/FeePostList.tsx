@@ -37,6 +37,11 @@ interface UpdateModalData {
     title: string;
 }
 
+interface DeleteModalData {
+    postId: string;
+    title: string;
+}
+
 const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => {
     const [feePosts, setFeePosts] = useState<FeePost[]>([]);
     const [loading, setLoading] = useState(false);
@@ -51,9 +56,10 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [updateModalData, setUpdateModalData] = useState<UpdateModalData | null>(null);
     const [modalPayload, setModalPayload] = useState<UpdateStatusPayload>({ mode: "online", is_paid: false });
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteModalData, setDeleteModalData] = useState<DeleteModalData | null>(null);
 
     const observer = useRef<IntersectionObserver | null>(null);
-    // const lastPostElementRef = useRef<HTMLDivElement | null>(null);
     const throttleTimeout = useRef<number | null>(null);
 
     const LIMIT = 10;
@@ -133,10 +139,21 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
         return new Date(deadline) < new Date();
     };
 
-    // Handle delete fee post
-    const handleDeletePost = async (postId: string) => {
+    // Handle delete click - shows confirmation modal
+    const handleDeleteClick = (postId: string, title: string) => {
+        setDeleteModalData({ postId, title });
+        setShowDeleteModal(true);
+    };
+
+    // Handle confirmed delete
+    const handleDeletePost = async () => {
+        if (!deleteModalData) return;
+
+        const postId = deleteModalData.postId;
+
         // Optimistic update - remove from UI immediately
         setDeletingIds(prev => new Set(prev).add(postId));
+        setShowDeleteModal(false);
 
         try {
             const token = localStorage.getItem("token") || "";
@@ -170,7 +187,15 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
             });
             setDeleteError("Something went wrong while deleting the post");
             setTimeout(() => setDeleteError(null), 5000);
+        } finally {
+            setDeleteModalData(null);
         }
+    };
+
+    // Cancel delete
+    const cancelDelete = () => {
+        setShowDeleteModal(false);
+        setDeleteModalData(null);
     };
 
     // Handle update fee post status
@@ -361,7 +386,7 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
 
                                     {/* Delete Button */}
                                     <button
-                                        onClick={() => handleDeletePost(post.id)}
+                                        onClick={() => handleDeleteClick(post.id, post.title)}
                                         disabled={isDeleting || isUpdating}
                                         className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Delete post"
@@ -510,6 +535,35 @@ const FeePostsList: React.FC<FeePostsListProps> = ({ studentId, className }) => 
                                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
                             >
                                 Update Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && deleteModalData && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                            Confirm Deletion
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                            Are you sure you want to delete the fee post: <strong>{deleteModalData.title}</strong>? This action cannot be undone.
+                        </p>
+
+                        <div className="flex justify-end space-x-3 mt-6">
+                            <button
+                                onClick={cancelDelete}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeletePost}
+                                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                            >
+                                Delete
                             </button>
                         </div>
                     </div>
