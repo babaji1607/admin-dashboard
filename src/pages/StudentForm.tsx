@@ -6,7 +6,7 @@ import SelectDropdown from "../components/SelectDropdown";
 import { registerUser } from "../api/Auth";
 import AdditionalForm from "../components/FeePostForm";
 import FeePostsList from "../components/FeePostList";
-import { createFeePost } from "../api/Feepost";
+// import { createFeePost } from "../api/Feepost";
 
 // Define option type
 interface OptionType {
