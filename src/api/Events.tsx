@@ -12,7 +12,7 @@ export const createEvent = (
         return;
     }
 
-    fetch(`${GLOBAL_URL}/events`, {
+    fetch(`${GLOBAL_URL}/events/`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
